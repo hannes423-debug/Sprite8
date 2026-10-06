@@ -1,0 +1,29 @@
+# Dependencies & builds
+node_modules
+dist
+dist-ssr
+*.local
+
+# Test output
+test-results
+playwright-report
+blob-report
+coverage
+
+# Python
+__pycache__
+*.pyc
+.venv
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.sw?
