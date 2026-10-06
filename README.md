@@ -189,8 +189,9 @@ mirroring rules, persistence, keyboard shortcuts and a phone-sized touch session
 
 The repository contains [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). In your
 GitHub repository go to **Settings → Pages** and set **Source: GitHub Actions**; every push to
-`main` then builds and publishes the site. The build uses relative paths, so it works under
-`https://<user>.github.io/<repo>/` without configuration.
+`main` then builds and publishes the site. To publish from another branch, or without pushing, use
+**Actions → Deploy to GitHub Pages → Run workflow**. The build uses relative paths, so it works
+under `https://<user>.github.io/<repo>/` without configuration.
 
 When Sprite8 runs from GitHub Pages (HTTPS) and your model server runs on your own computer, the
 browser may ask for permission to access the local network, and the server must allow the page
