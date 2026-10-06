@@ -51,15 +51,54 @@ export function Header() {
         </div>
       </div>
       <div className="header-actions">
-        {lastSavedAt && hasSource ? <span className="save-state">Saved in this browser</span> : null}
-        <IconButton icon="undo" label="Undo (Ctrl+Z)" onClick={undo} disabled={!canUndo} testId="undo" />
-        <IconButton icon="redo" label="Redo (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo} testId="redo" />
-        <IconButton icon="filePlus" label="New project" onClick={() => void newProject()} testId="new-project" />
-        <IconButton icon="folder" label="Open project file (Ctrl+O)" onClick={() => void openProjectFile()} testId="open-project" />
-        <IconButton icon="save" label="Save project file (Ctrl+S)" onClick={() => void saveProjectFile()} disabled={!hasSource} testId="save-project" />
-        <IconButton icon="help" label="Help & shortcuts (?)" onClick={() => openDialog({ kind: 'help' })} testId="help" />
+        {lastSavedAt && hasSource ? (
+          <span className="save-state">Saved in this browser</span>
+        ) : null}
+        <IconButton
+          icon="undo"
+          label="Undo (Ctrl+Z)"
+          onClick={undo}
+          disabled={!canUndo}
+          testId="undo"
+        />
+        <IconButton
+          icon="redo"
+          label="Redo (Ctrl+Shift+Z)"
+          onClick={redo}
+          disabled={!canRedo}
+          testId="redo"
+        />
+        <IconButton
+          icon="filePlus"
+          label="New project"
+          onClick={() => void newProject()}
+          testId="new-project"
+        />
+        <IconButton
+          icon="folder"
+          label="Open project file (Ctrl+O)"
+          onClick={() => void openProjectFile()}
+          testId="open-project"
+        />
+        <IconButton
+          icon="save"
+          label="Save project file (Ctrl+S)"
+          onClick={() => void saveProjectFile()}
+          disabled={!hasSource}
+          testId="save-project"
+        />
+        <IconButton
+          icon="help"
+          label="Help & shortcuts (?)"
+          onClick={() => openDialog({ kind: 'help' })}
+          testId="help"
+        />
         {fullscreenSupported() ? (
-          <IconButton icon={fs ? 'fullscreenExit' : 'fullscreen'} label={fs ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => void toggleFullscreen()} />
+          <IconButton
+            icon={fs ? 'fullscreenExit' : 'fullscreen'}
+            label={fs ? 'Exit fullscreen' : 'Fullscreen'}
+            onClick={() => void toggleFullscreen()}
+          />
         ) : null}
       </div>
     </header>
@@ -80,17 +119,24 @@ export function FlowStrip() {
   const analyzed = useAppState((s) => !!s.project.character);
   const filled = useAppState((s) => {
     const anim = activeAnimation(s.project);
-    return DIRECTIONS.filter((d) => anim.tracks[d].frames[0]?.image && anim.tracks[d].frames[0].status !== 'guide').length;
+    return DIRECTIONS.filter(
+      (d) => anim.tracks[d].frames[0]?.image && anim.tracks[d].frames[0].status !== 'guide',
+    ).length;
   });
   const done = [hasSource, analyzed, filled > 1, filled === 8, false];
   const current = done.findIndex((d) => !d);
-  const scrollTo = (id: string) => document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scrollTo = (id: string) =>
+    document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return (
     <nav className="flow" aria-label="Workflow">
       {STEPS.map((step, i) => (
         <span key={step.id} style={{ display: 'contents' }}>
           {i > 0 ? <Icon name="arrowRight" size={14} className="flow-arrow" /> : null}
-          <button type="button" className={`flow-step${done[i] ? ' done' : ''}${i === current ? ' current' : ''}`} onClick={() => scrollTo(step.id === 'inspect' ? 'generate' : step.id)}>
+          <button
+            type="button"
+            className={`flow-step${done[i] ? ' done' : ''}${i === current ? ' current' : ''}`}
+            onClick={() => scrollTo(step.id === 'inspect' ? 'generate' : step.id)}
+          >
             <span className="num">{done[i] ? '✓' : i + 1}</span>
             {step.label}
             {step.id === 'inspect' ? <span className="faint">{filled}/8</span> : null}

@@ -1,6 +1,11 @@
 import { frameCount, type Animation } from '../animation';
 import { DIRECTIONS, computePlacements, gridDimensions, type Direction } from '../directions';
-import { activeAnimation, type Project, type SheetSettings, type WorkingCell } from '../project/project';
+import {
+  activeAnimation,
+  type Project,
+  type SheetSettings,
+  type WorkingCell,
+} from '../project/project';
 import {
   binarizeAlpha,
   blitInPlace,
@@ -51,14 +56,22 @@ interface Extents {
   bottom: number;
 }
 
-function alignOffsets(anim: Animation, cell: WorkingCell, align: SheetSettings['align']): Record<Direction, { dx: number; dy: number }> {
+function alignOffsets(
+  anim: Animation,
+  cell: WorkingCell,
+  align: SheetSettings['align'],
+): Record<Direction, { dx: number; dy: number }> {
   const out = {} as Record<Direction, { dx: number; dy: number }>;
   for (const d of DIRECTIONS) {
     out[d] = { dx: 0, dy: 0 };
     if (align !== 'feet') continue;
     const first = anim.tracks[d].frames.find((f) => f.image && f.status !== 'empty');
     const feet = first?.image ? findFeet(first.image) : null;
-    if (feet) out[d] = { dx: Math.round(cell.anchorX - feet.feetX), dy: Math.round(cell.anchorY - feet.groundY) };
+    if (feet)
+      out[d] = {
+        dx: Math.round(cell.anchorX - feet.feetX),
+        dy: Math.round(cell.anchorY - feet.groundY),
+      };
   }
   return out;
 }
@@ -87,7 +100,13 @@ function unionExtents(images: RasterImage[], cell: WorkingCell): Extents | null 
   return ext;
 }
 
-export const TARGET_SIZES: Record<string, number> = { '32': 32, '48': 48, '64': 64, '96': 96, '128': 128 };
+export const TARGET_SIZES: Record<string, number> = {
+  '32': 32,
+  '48': 48,
+  '64': 64,
+  '96': 96,
+  '128': 128,
+};
 
 /**
  * Lays out every (direction, frame) of an animation into one sprite sheet.
@@ -119,7 +138,12 @@ export function buildSheet(project: Project, animation?: Animation): BuiltSheet 
   }
   const images = [...aligned.values()].filter((x): x is RasterImage => !!x);
   if (images.length === 0) warnings.push('There is nothing to export yet.');
-  const ext = unionExtents(images, cell) ?? { left: cell.width / 4, right: cell.width / 4, top: cell.height / 2, bottom: 0 };
+  const ext = unionExtents(images, cell) ?? {
+    left: cell.width / 4,
+    right: cell.width / 4,
+    top: cell.height / 2,
+    bottom: 0,
+  };
 
   // Cell size, anchor and character scale (before the export scale).
   let cellW: number;
@@ -191,12 +215,19 @@ export function buildSheet(project: Project, animation?: Animation): BuiltSheet 
       const w = Math.max(1, Math.round(img.width * S));
       const h = Math.max(1, Math.round(img.height * S));
       if (Math.abs(S - 1) < 1e-9) scaled = img;
-      else if (nearest) scaled = S < 1 && pixelMode ? downscaleMode(img, w, h) : scaleNearest(img, w, h);
+      else if (nearest)
+        scaled = S < 1 && pixelMode ? downscaleMode(img, w, h) : scaleNearest(img, w, h);
       else scaled = scaleSmooth(img, w, h);
       if (pixelMode) scaled = binarizeAlpha(scaled);
       scaledCache.set(img, scaled);
     }
-    blitInPlace(out, scaled, Math.round(finalAnchorX - cell.anchorX * S), Math.round(finalAnchorY - cell.anchorY * S), 'over');
+    blitInPlace(
+      out,
+      scaled,
+      Math.round(finalAnchorX - cell.anchorX * S),
+      Math.round(finalAnchorY - cell.anchorY * S),
+      'over',
+    );
     return out;
   };
 
@@ -211,10 +242,22 @@ export function buildSheet(project: Project, animation?: Animation): BuiltSheet 
     const x = p.col * (finalW + spacing);
     const y = p.row * (finalH + spacing);
     blitInPlace(sheet, image, x, y, 'replace');
-    cells.push({ direction: p.direction, frame: p.frame, col: p.col, row: p.row, x, y, image, empty: !src });
+    cells.push({
+      direction: p.direction,
+      frame: p.frame,
+      col: p.col,
+      row: p.row,
+      x,
+      y,
+      image,
+      empty: !src,
+    });
   }
-  const emptyDirs = DIRECTIONS.filter((d) => cells.filter((c) => c.direction === d).every((c) => c.empty));
-  if (images.length > 0 && emptyDirs.length) warnings.push(`Empty directions: ${emptyDirs.join(', ')}.`);
+  const emptyDirs = DIRECTIONS.filter((d) =>
+    cells.filter((c) => c.direction === d).every((c) => c.empty),
+  );
+  if (images.length > 0 && emptyDirs.length)
+    warnings.push(`Empty directions: ${emptyDirs.join(', ')}.`);
 
   return {
     image: sheet,

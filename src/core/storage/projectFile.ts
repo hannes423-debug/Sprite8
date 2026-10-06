@@ -21,14 +21,24 @@ interface EncodedRaster {
 
 function isRaster(v: unknown): v is RasterImage {
   const r = v as RasterImage;
-  return !!r && typeof r === 'object' && r.data instanceof Uint8ClampedArray && typeof r.width === 'number' && typeof r.height === 'number';
+  return (
+    !!r &&
+    typeof r === 'object' &&
+    r.data instanceof Uint8ClampedArray &&
+    typeof r.width === 'number' &&
+    typeof r.height === 'number'
+  );
 }
 
 function isEncoded(v: unknown): v is EncodedRaster {
   return !!v && typeof v === 'object' && (v as EncodedRaster).$raster === 'png';
 }
 
-async function mapDeep(value: unknown, fn: (v: unknown) => Promise<unknown> | undefined, cache: Map<unknown, Promise<unknown>>): Promise<unknown> {
+async function mapDeep(
+  value: unknown,
+  fn: (v: unknown) => Promise<unknown> | undefined,
+  cache: Map<unknown, Promise<unknown>>,
+): Promise<unknown> {
   // Shared rasters (the same image referenced twice) are converted once.
   if (value && typeof value === 'object' && cache.has(value)) return cache.get(value);
   const direct = fn(value);
@@ -79,7 +89,8 @@ export async function deserializeProject(text: string, codec: ImageCodec): Promi
   } catch {
     throw new Error('The file is not valid JSON.');
   }
-  if (json.format !== PROJECT_FILE_FORMAT || !json.project) throw new Error('This is not a Sprite8 project file.');
+  if (json.format !== PROJECT_FILE_FORMAT || !json.project)
+    throw new Error('This is not a Sprite8 project file.');
   const cache = new Map<unknown, Promise<unknown>>();
   const decoded = await mapDeep(
     json.project,
@@ -87,7 +98,8 @@ export async function deserializeProject(text: string, codec: ImageCodec): Promi
       isEncoded(v)
         ? (async () => {
             const img = await codec.decode(base64ToBlob(v.data));
-            if (img.width !== v.width || img.height !== v.height) throw new Error('A stored image has unexpected dimensions.');
+            if (img.width !== v.width || img.height !== v.height)
+              throw new Error('A stored image has unexpected dimensions.');
             return img;
           })()
         : undefined,

@@ -29,13 +29,20 @@ describe('character analysis', () => {
   });
 
   it('detects one-sided equipment and suggests handedness', () => {
-    const a = analyzeSprite(humanoid({ stick: 'screen-left' }), { sourceDirection: 'S', pixelArt: true });
+    const a = analyzeSprite(humanoid({ stick: 'screen-left' }), {
+      sourceDirection: 'S',
+      pixelArt: true,
+    });
     expect(a.symmetry.verdict).not.toBe('symmetric');
     expect(a.handedness.handedness).toBe('right');
     const model = createCharacterModel(humanoid({ stick: 'screen-left' }), a);
     expect(model.handedness).toBe('right');
     expect(model.features).toHaveLength(1);
-    expect(model.features[0]).toMatchObject({ side: 'right', attachment: 'hand', category: 'equipment' });
+    expect(model.features[0]).toMatchObject({
+      side: 'right',
+      attachment: 'hand',
+      category: 'equipment',
+    });
   });
 
   it('symmetry score is near 1 for mirror-symmetric images', () => {
@@ -48,7 +55,12 @@ describe('character analysis', () => {
     const sprite = humanoid();
     const a = analyzeSprite(sprite, { sourceDirection: 'S', pixelArt: true });
     const first = createCharacterModel(sprite, a);
-    const edited = { ...first, description: 'hockey player', handedness: 'left' as const, locks: { ...first.locks, palette: false } };
+    const edited = {
+      ...first,
+      description: 'hockey player',
+      handedness: 'left' as const,
+      locks: { ...first.locks, palette: false },
+    };
     const again = createCharacterModel(sprite, a, edited);
     expect(again.description).toBe('hockey player');
     expect(again.handedness).toBe('left');
@@ -76,7 +88,9 @@ describe('character analysis', () => {
 
 describe('bundled examples', () => {
   const load = (name: string) => {
-    const { width, height, data } = decodePng(new Uint8Array(readFileSync(new URL(`../../assets/examples/${name}`, import.meta.url))));
+    const { width, height, data } = decodePng(
+      new Uint8Array(readFileSync(new URL(`../../assets/examples/${name}`, import.meta.url))),
+    );
     return { width, height, data };
   };
 

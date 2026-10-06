@@ -32,7 +32,11 @@ function colorAt(d: Uint8ClampedArray, p: number): Rgba {
  * Looks at the image border to decide whether the sprite already has a
  * transparent background or sits on a uniform colour that can be keyed out.
  */
-export function detectBackground(img: RasterImage, hint?: Rgba | null, tolerance = 32): BackgroundInfo {
+export function detectBackground(
+  img: RasterImage,
+  hint?: Rgba | null,
+  tolerance = 32,
+): BackgroundInfo {
   const border = borderIndices(img.width, img.height);
   if (border.length === 0) return { kind: 'none', color: null, coverage: 0 };
   const d = img.data;
@@ -43,7 +47,8 @@ export function detectBackground(img: RasterImage, hint?: Rgba | null, tolerance
   }
   if (hint) {
     let match = 0;
-    for (const p of border) if (d[p * 4 + 3] >= 16 && rgbDistance(colorAt(d, p), hint) <= tolerance) match++;
+    for (const p of border)
+      if (d[p * 4 + 3] >= 16 && rgbDistance(colorAt(d, p), hint) <= tolerance) match++;
     if (match / border.length >= 0.2) {
       return { kind: 'solid', color: { ...hint, a: 255 }, coverage: match / border.length };
     }
@@ -72,7 +77,8 @@ export function detectBackground(img: RasterImage, hint?: Rgba | null, tolerance
   };
   // Re-measure coverage with the real tolerance (neighbouring clusters count).
   let match = 0;
-  for (const p of border) if (d[p * 4 + 3] >= 16 && rgbDistance(colorAt(d, p), color) <= tolerance) match++;
+  for (const p of border)
+    if (d[p * 4 + 3] >= 16 && rgbDistance(colorAt(d, p), color) <= tolerance) match++;
   const coverage = match / border.length;
   return coverage >= 0.35 ? { kind: 'solid', color, coverage } : { kind: 'none', color, coverage };
 }
@@ -104,11 +110,18 @@ export interface RemoveBackgroundResult {
 }
 
 /** Makes the background transparent. Never touches images that already have alpha. */
-export function removeBackground(img: RasterImage, opts: RemoveBackgroundOptions = {}): RemoveBackgroundResult {
+export function removeBackground(
+  img: RasterImage,
+  opts: RemoveBackgroundOptions = {},
+): RemoveBackgroundResult {
   const tolerance = opts.tolerance ?? 32;
   const mode = opts.mode ?? 'auto';
   const info = detectBackground(img, opts.hint ?? null, tolerance);
-  const out: RasterImage = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  const out: RasterImage = {
+    width: img.width,
+    height: img.height,
+    data: new Uint8ClampedArray(img.data),
+  };
   const d = out.data;
 
   if (info.kind === 'transparent') {

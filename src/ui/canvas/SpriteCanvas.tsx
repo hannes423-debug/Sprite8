@@ -61,7 +61,13 @@ export function SpriteCanvas(props: {
     if (image && image.width > 0 && image.height > 0) {
       ctx.imageSmoothingEnabled = !pixelated;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(rasterCanvas(image), view.x0, view.y0, image.width * scale, image.height * scale);
+      ctx.drawImage(
+        rasterCanvas(image),
+        view.x0,
+        view.y0,
+        image.width * scale,
+        image.height * scale,
+      );
     }
     overlay?.(ctx, view);
   }, [ref, size, image, pixelated, underlay, overlay, lw, lh]);

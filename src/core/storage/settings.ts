@@ -64,7 +64,10 @@ export function loadSettings(store: KeyValueStore | null = defaultStore()): AppS
   }
 }
 
-export function saveSettings(settings: AppSettings, store: KeyValueStore | null = defaultStore()): void {
+export function saveSettings(
+  settings: AppSettings,
+  store: KeyValueStore | null = defaultStore(),
+): void {
   try {
     store?.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {

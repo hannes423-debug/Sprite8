@@ -25,7 +25,11 @@ export function slugify(name: string): string {
   return slug || 'character';
 }
 
-export function exportNames(characterName: string, animationName: string, frames: number): ExportNames {
+export function exportNames(
+  characterName: string,
+  animationName: string,
+  frames: number,
+): ExportNames {
   const base = slugify(characterName);
   const anim = slugify(animationName).toLowerCase();
   return {
@@ -81,7 +85,11 @@ export interface SheetMetadata {
  * (character / directions / cellWidth / cellHeight / anchor); `sheet` and
  * `animation` add per-frame rectangles for atlas-based engines.
  */
-export function buildMetadata(project: Project, sheet: BuiltSheet, names: ExportNames): SheetMetadata {
+export function buildMetadata(
+  project: Project,
+  sheet: BuiltSheet,
+  names: ExportNames,
+): SheetMetadata {
   const directions = {} as Record<Direction, string>;
   const frames = {} as Record<Direction, FrameRect[]>;
   for (const d of DIRECTIONS) {
@@ -89,7 +97,13 @@ export function buildMetadata(project: Project, sheet: BuiltSheet, names: Export
     frames[d] = sheet.cells
       .filter((c) => c.direction === d)
       .sort((a, b) => a.frame - b.frame)
-      .map((c) => ({ x: c.x, y: c.y, w: sheet.cellWidth, h: sheet.cellHeight, file: names.cell(d, c.frame) }));
+      .map((c) => ({
+        x: c.x,
+        y: c.y,
+        w: sheet.cellWidth,
+        h: sheet.cellHeight,
+        file: names.cell(d, c.frame),
+      }));
   }
   const order = [...new Set(sheet.cells.map((c) => c.direction))];
   return {

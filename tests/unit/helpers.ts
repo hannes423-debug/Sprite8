@@ -5,7 +5,9 @@ import { createRaster, setPixelInPlace, type RasterImage, type Rgba } from '../.
 /** Real PNG codec for Node tests (same code as the reference server). */
 export const nodeCodec: ImageCodec = {
   async encodePng(img: RasterImage) {
-    return new Blob([encodePng(img.width, img.height, img.data) as Uint8Array<ArrayBuffer>], { type: 'image/png' });
+    return new Blob([encodePng(img.width, img.height, img.data) as Uint8Array<ArrayBuffer>], {
+      type: 'image/png',
+    });
   },
   async decode(blob: Blob) {
     const { width, height, data } = decodePng(new Uint8Array(await blob.arrayBuffer()));
@@ -49,15 +51,22 @@ export function outlined(img: RasterImage, color: Rgba = C.outline): RasterImage
     for (let x = 0; x < img.width; x++) {
       const i = (y * img.width + x) * 4;
       if (img.data[i + 3] === 0) continue;
-      setPixelInPlace(out, x + 1, y + 1, { r: img.data[i], g: img.data[i + 1], b: img.data[i + 2], a: img.data[i + 3] });
+      setPixelInPlace(out, x + 1, y + 1, {
+        r: img.data[i],
+        g: img.data[i + 1],
+        b: img.data[i + 2],
+        a: img.data[i + 3],
+      });
     }
   }
   const copy = new Uint8ClampedArray(out.data);
-  const opaque = (x: number, y: number) => x >= 0 && y >= 0 && x < out.width && y < out.height && copy[(y * out.width + x) * 4 + 3] > 0;
+  const opaque = (x: number, y: number) =>
+    x >= 0 && y >= 0 && x < out.width && y < out.height && copy[(y * out.width + x) * 4 + 3] > 0;
   for (let y = 0; y < out.height; y++) {
     for (let x = 0; x < out.width; x++) {
       if (opaque(x, y)) continue;
-      if (opaque(x - 1, y) || opaque(x + 1, y) || opaque(x, y - 1) || opaque(x, y + 1)) setPixelInPlace(out, x, y, color);
+      if (opaque(x - 1, y) || opaque(x + 1, y) || opaque(x, y - 1) || opaque(x, y + 1))
+        setPixelInPlace(out, x, y, color);
     }
   }
   return out;
@@ -67,7 +76,9 @@ export function outlined(img: RasterImage, color: Rgba = C.outline): RasterImage
  * Procedural front-view humanoid (≈ 4 heads tall) used by analysis tests.
  * `stick` adds a long one-sided item reaching to that SCREEN side.
  */
-export function humanoid(opts: { stick?: 'screen-left' | 'screen-right' | null; scale?: number } = {}): RasterImage {
+export function humanoid(
+  opts: { stick?: 'screen-left' | 'screen-right' | null; scale?: number } = {},
+): RasterImage {
   const s = opts.scale ?? 1;
   const W = 40 * s;
   const H = 48 * s;
@@ -88,10 +99,12 @@ export function humanoid(opts: { stick?: 'screen-left' | 'screen-right' | null; 
   fillRect(img, cx - 7 * s, 45 * s, 6 * s, 3 * s, C.outline);
   fillRect(img, cx + 1 * s, 45 * s, 6 * s, 3 * s, C.outline);
   if (opts.stick === 'screen-left') {
-    for (let i = 0; i < 18 * s; i++) setPixelInPlace(img, cx - 9 * s - i, 22 * s + Math.floor(i * 1.4), C.stick);
+    for (let i = 0; i < 18 * s; i++)
+      setPixelInPlace(img, cx - 9 * s - i, 22 * s + Math.floor(i * 1.4), C.stick);
     fillRect(img, cx - 9 * s - 18 * s, 46 * s, 5 * s, 2 * s, C.outline);
   } else if (opts.stick === 'screen-right') {
-    for (let i = 0; i < 18 * s; i++) setPixelInPlace(img, cx + 9 * s + i, 22 * s + Math.floor(i * 1.4), C.stick);
+    for (let i = 0; i < 18 * s; i++)
+      setPixelInPlace(img, cx + 9 * s + i, 22 * s + Math.floor(i * 1.4), C.stick);
     fillRect(img, cx + 9 * s + 14 * s, 46 * s, 5 * s, 2 * s, C.outline);
   }
   return img;
@@ -101,7 +114,8 @@ export function humanoid(opts: { stick?: 'screen-left' | 'screen-right' | null; 
 export function opaqueColors(img: RasterImage): Set<string> {
   const out = new Set<string>();
   for (let i = 0; i < img.data.length; i += 4) {
-    if (img.data[i + 3] > 0) out.add(`${img.data[i]},${img.data[i + 1]},${img.data[i + 2]},${img.data[i + 3]}`);
+    if (img.data[i + 3] > 0)
+      out.add(`${img.data[i]},${img.data[i + 1]},${img.data[i + 2]},${img.data[i + 3]}`);
   }
   return out;
 }

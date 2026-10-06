@@ -5,3 +5,5 @@ playwright-report
 package-lock.json
 assets/**/*.png
 public/**/*.png
+*.md
+models/comfyui/*.json

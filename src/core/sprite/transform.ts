@@ -91,9 +91,14 @@ export interface RotateOptions {
  * nearest-neighbour sampling, which never invents new colours — important for
  * pixel art and palettes.
  */
-export function rotateArbitrary(img: RasterImage, degrees: number, opts: RotateOptions = {}): RasterImage {
+export function rotateArbitrary(
+  img: RasterImage,
+  degrees: number,
+  opts: RotateOptions = {},
+): RasterImage {
   const norm = ((degrees % 360) + 360) % 360;
-  if (norm === 0) return { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  if (norm === 0)
+    return { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
   if (opts.expand) {
     if (norm === 90) return rotate90(img, true);
     if (norm === 180) return rotate180(img);
@@ -323,14 +328,24 @@ export function downscaleMode(
       const centreKey =
         img.data[ci + 3] < alphaThreshold
           ? TRANSPARENT_KEY
-          : packRgba(img.data[ci] >> shift, img.data[ci + 1] >> shift, img.data[ci + 2] >> shift, 0);
+          : packRgba(
+              img.data[ci] >> shift,
+              img.data[ci + 1] >> shift,
+              img.data[ci + 2] >> shift,
+              0,
+            );
       for (let yy = y0; yy < y1; yy++) {
         for (let xx = x0; xx < x1; xx++) {
           const i = (yy * img.width + xx) * 4;
           const key =
             img.data[i + 3] < alphaThreshold
               ? TRANSPARENT_KEY
-              : packRgba(img.data[i] >> shift, img.data[i + 1] >> shift, img.data[i + 2] >> shift, 0);
+              : packRgba(
+                  img.data[i] >> shift,
+                  img.data[i + 1] >> shift,
+                  img.data[i + 2] >> shift,
+                  0,
+                );
           let entry = counts.get(key);
           if (!entry) {
             entry = { n: 0, r: 0, g: 0, b: 0 };
@@ -363,10 +378,17 @@ export function downscaleMode(
 }
 
 /** Scales with the method appropriate for the art style. */
-export function scaleForStyle(img: RasterImage, width: number, height: number, pixelArt: boolean): RasterImage {
+export function scaleForStyle(
+  img: RasterImage,
+  width: number,
+  height: number,
+  pixelArt: boolean,
+): RasterImage {
   if (!pixelArt) return scaleSmooth(img, width, height);
   const shrinking = width < img.width * 0.75 || height < img.height * 0.75;
-  return shrinking ? downscaleMode(img, width, height, { bits: 5 }) : scaleNearest(img, width, height);
+  return shrinking
+    ? downscaleMode(img, width, height, { bits: 5 })
+    : scaleNearest(img, width, height);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -396,7 +418,13 @@ export function crop(img: RasterImage, rect: Rect): RasterImage {
 export type BlitMode = 'over' | 'replace';
 
 /** Draws `src` onto `dst` at (dx, dy). Mutates `dst`. */
-export function blitInPlace(dst: RasterImage, src: RasterImage, dx: number, dy: number, mode: BlitMode = 'over'): void {
+export function blitInPlace(
+  dst: RasterImage,
+  src: RasterImage,
+  dx: number,
+  dy: number,
+  mode: BlitMode = 'over',
+): void {
   const ox = Math.round(dx);
   const oy = Math.round(dy);
   for (let y = 0; y < src.height; y++) {
@@ -415,14 +443,29 @@ export function blitInPlace(dst: RasterImage, src: RasterImage, dx: number, dy: 
       } else {
         const a = src.data[si + 3];
         if (a === 0) continue;
-        blendPixelInPlace(dst, tx, ty, { r: src.data[si], g: src.data[si + 1], b: src.data[si + 2], a });
+        blendPixelInPlace(dst, tx, ty, {
+          r: src.data[si],
+          g: src.data[si + 1],
+          b: src.data[si + 2],
+          a,
+        });
       }
     }
   }
 }
 
-export function blit(dst: RasterImage, src: RasterImage, dx: number, dy: number, mode: BlitMode = 'over'): RasterImage {
-  const out: RasterImage = { width: dst.width, height: dst.height, data: new Uint8ClampedArray(dst.data) };
+export function blit(
+  dst: RasterImage,
+  src: RasterImage,
+  dx: number,
+  dy: number,
+  mode: BlitMode = 'over',
+): RasterImage {
+  const out: RasterImage = {
+    width: dst.width,
+    height: dst.height,
+    data: new Uint8ClampedArray(dst.data),
+  };
   blitInPlace(out, src, dx, dy, mode);
   return out;
 }
@@ -435,7 +478,13 @@ export function translate(img: RasterImage, dx: number, dy: number): RasterImage
 }
 
 /** New canvas of the given size with `img` drawn at (offsetX, offsetY). */
-export function resizeCanvas(img: RasterImage, width: number, height: number, offsetX: number, offsetY: number): RasterImage {
+export function resizeCanvas(
+  img: RasterImage,
+  width: number,
+  height: number,
+  offsetX: number,
+  offsetY: number,
+): RasterImage {
   const out = createRaster(width, height);
   blitInPlace(out, img, offsetX, offsetY, 'replace');
   return out;
@@ -443,7 +492,11 @@ export function resizeCanvas(img: RasterImage, width: number, height: number, of
 
 /** Multiplies alpha by `factor` (0…n) inside `rect` (or everywhere). */
 export function multiplyAlpha(img: RasterImage, factor: number, rect?: Rect): RasterImage {
-  const out: RasterImage = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  const out: RasterImage = {
+    width: img.width,
+    height: img.height,
+    data: new Uint8ClampedArray(img.data),
+  };
   const x0 = Math.max(0, rect?.x ?? 0);
   const y0 = Math.max(0, rect?.y ?? 0);
   const x1 = Math.min(img.width, rect ? rect.x + rect.width : img.width);
@@ -459,12 +512,17 @@ export function multiplyAlpha(img: RasterImage, factor: number, rect?: Rect): Ra
 
 /** Clears `rect` to transparent. */
 export function clearRect(img: RasterImage, rect: Rect): RasterImage {
-  const out: RasterImage = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  const out: RasterImage = {
+    width: img.width,
+    height: img.height,
+    data: new Uint8ClampedArray(img.data),
+  };
   const x0 = Math.max(0, rect.x);
   const y0 = Math.max(0, rect.y);
   const x1 = Math.min(img.width, rect.x + rect.width);
   const y1 = Math.min(img.height, rect.y + rect.height);
-  for (let y = y0; y < y1; y++) out.data.fill(0, (y * img.width + x0) * 4, (y * img.width + x1) * 4);
+  for (let y = y0; y < y1; y++)
+    out.data.fill(0, (y * img.width + x0) * 4, (y * img.width + x1) * 4);
   return out;
 }
 
@@ -477,7 +535,11 @@ export function clearOutside(img: RasterImage, rect: Rect): RasterImage {
 
 /** Sets alpha to 0 or 255 (pixel art should not have soft edges). */
 export function binarizeAlpha(img: RasterImage, threshold = 128): RasterImage {
-  const out: RasterImage = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  const out: RasterImage = {
+    width: img.width,
+    height: img.height,
+    data: new Uint8ClampedArray(img.data),
+  };
   for (let i = 3; i < out.data.length; i += 4) {
     if (out.data[i] >= threshold) out.data[i] = 255;
     else {
@@ -491,7 +553,10 @@ export function binarizeAlpha(img: RasterImage, threshold = 128): RasterImage {
 }
 
 /** Composites `img` over a solid colour (used to prepare AI inputs). */
-export function flattenOnto(img: RasterImage, bg: { r: number; g: number; b: number }): RasterImage {
+export function flattenOnto(
+  img: RasterImage,
+  bg: { r: number; g: number; b: number },
+): RasterImage {
   const out = createRaster(img.width, img.height, { ...bg, a: 255 });
   blitInPlace(out, img, 0, 0, 'over');
   return out;

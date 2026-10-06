@@ -49,7 +49,10 @@ describe('side visibility geometry', () => {
     for (const d of DIRECTIONS) {
       const m = mirroredDirection(d);
       const trueView = sidePlacement(m, 'right');
-      const flippedImage = { screenX: -sidePlacement(d, 'right').screenX, depth: sidePlacement(d, 'right').depth };
+      const flippedImage = {
+        screenX: -sidePlacement(d, 'right').screenX,
+        depth: sidePlacement(d, 'right').depth,
+      };
       if (Math.abs(trueView.screenX) > 0.3 || Math.abs(trueView.depth) > 0.3) {
         const sameScreen = Math.sign(trueView.screenX) === Math.sign(flippedImage.screenX);
         const sameDepth = Math.sign(trueView.depth) === Math.sign(flippedImage.depth);
@@ -92,7 +95,10 @@ describe('feature placement hints', () => {
     expect(featureHint(stick, 'S').screen).toBe('left');
     expect(featureHint(stick, 'N').screen).toBe('right');
     expect(featureHint(stick, 'SE')).toMatchObject({ screen: 'left', visibility: 'visible' });
-    expect(featureHint(stick, 'NW')).toMatchObject({ screen: 'right', visibility: 'partly hidden' });
+    expect(featureHint(stick, 'NW')).toMatchObject({
+      screen: 'right',
+      visibility: 'partly hidden',
+    });
     expect(featureHint(stick, 'E').text).toContain('in front of the body');
     expect(featureHint(stick, 'W')).toMatchObject({ visibility: 'hidden' });
   });
@@ -103,7 +109,9 @@ describe('feature placement hints', () => {
   });
 
   it('builds a handedness sentence', () => {
-    expect(handednessHint('right', 'S')).toMatch(/^Right-handed: the character's right side appears on the LEFT/);
+    expect(handednessHint('right', 'S')).toMatch(
+      /^Right-handed: the character's right side appears on the LEFT/,
+    );
     expect(handednessHint('none', 'S')).toBeNull();
   });
 });
@@ -129,12 +137,27 @@ describe('handedness detection', () => {
     // Correct back view: right side is on screen-right.
     const goodN = flipHorizontal(source);
     // A wrongly mirrored three-quarter view: equipment stays screen-left in NE.
-    const ok = checkHandedness({ source, sourceDirection: 'S', target: goodN, targetDirection: 'N' });
+    const ok = checkHandedness({
+      source,
+      sourceDirection: 'S',
+      target: goodN,
+      targetDirection: 'N',
+    });
     expect(ok.status).toBe('ok');
-    const bad = checkHandedness({ source, sourceDirection: 'S', target: source, targetDirection: 'NE' });
+    const bad = checkHandedness({
+      source,
+      sourceDirection: 'S',
+      target: source,
+      targetDirection: 'NE',
+    });
     expect(bad.status).toBe('warning');
     expect(bad.message).toMatch(/mirrored/);
-    const profile = checkHandedness({ source, sourceDirection: 'S', target: mirrorAroundAxis(source, 20), targetDirection: 'E' });
+    const profile = checkHandedness({
+      source,
+      sourceDirection: 'S',
+      target: mirrorAroundAxis(source, 20),
+      targetDirection: 'E',
+    });
     expect(profile.status).toBe('skipped');
   });
 });

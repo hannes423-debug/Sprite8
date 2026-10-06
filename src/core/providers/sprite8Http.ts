@@ -77,9 +77,16 @@ function characterPayload(req: DirectionRequest): Record<string, unknown> {
   };
 }
 
-async function buildBody(req: DirectionRequest, ctx: ProviderContext, variation?: VariationRequest): Promise<Sprite8GenerateRequestBody> {
+async function buildBody(
+  req: DirectionRequest,
+  ctx: ProviderContext,
+  variation?: VariationRequest,
+): Promise<Sprite8GenerateRequestBody> {
   const refs = await Promise.all(
-    req.references.map(async (r) => ({ direction: r.direction, image: await rasterToBase64Png(r.input.image, ctx.codec) })),
+    req.references.map(async (r) => ({
+      direction: r.direction,
+      image: await rasterToBase64Png(r.input.image, ctx.codec),
+    })),
   );
   return {
     protocol: SPRITE8_PROTOCOL,
@@ -97,7 +104,10 @@ async function buildBody(req: DirectionRequest, ctx: ProviderContext, variation?
     sourceImage: await rasterToBase64Png(req.input.image, ctx.codec),
     references: refs,
     ...(variation
-      ? { baseImage: await rasterToBase64Png(variation.base.image, ctx.codec), strength: variation.strength }
+      ? {
+          baseImage: await rasterToBase64Png(variation.base.image, ctx.codec),
+          strength: variation.strength,
+        }
       : {}),
     character: characterPayload(req),
   };
@@ -124,7 +134,10 @@ async function generate(
     },
     `Generating ${req.direction}`,
   );
-  const json = await readJson<{ image?: string; seed?: number; notes?: string[]; error?: string }>(res, 'The server');
+  const json = await readJson<{ image?: string; seed?: number; notes?: string[]; error?: string }>(
+    res,
+    'The server',
+  );
   if (json.error) throw new ProviderError(`Server error: ${json.error}`);
   if (!json.image) throw new ProviderError('The server response contains no "image".');
   ctx.onProgress?.(0.95, 'Decoding…');
@@ -138,7 +151,13 @@ export const sprite8HttpProvider: ImageGenerationProvider = {
   kind: 'local-ai',
   description:
     'Talks to any server that implements the small Sprite8 HTTP protocol — wrap diffusers, a Hugging Face model, a WebUI or a cloud API in a few lines. See models/reference-server for a ready-made example.',
-  capabilities: { generatesNewViews: true, variations: true, analysis: true, references: true, seeds: true },
+  capabilities: {
+    generatesNewViews: true,
+    variations: true,
+    analysis: true,
+    references: true,
+    seeds: true,
+  },
   settingsFields: [
     {
       key: 'endpoint',
@@ -148,19 +167,41 @@ export const sprite8HttpProvider: ImageGenerationProvider = {
       placeholder: 'http://127.0.0.1:7861',
       help: 'Base URL of the server. When running Sprite8 with `npm run dev`, "/proxy/sprite8" avoids CORS setup.',
     },
-    { key: 'apiKey', label: 'API key (optional)', type: 'password', default: '', help: 'Sent as "Authorization: Bearer …".' },
-    { key: 'timeoutSec', label: 'Timeout (seconds)', type: 'number', default: 300, min: 5, max: 3600, advanced: true },
+    {
+      key: 'apiKey',
+      label: 'API key (optional)',
+      type: 'password',
+      default: '',
+      help: 'Sent as "Authorization: Bearer …".',
+    },
+    {
+      key: 'timeoutSec',
+      label: 'Timeout (seconds)',
+      type: 'number',
+      default: 300,
+      min: 5,
+      max: 3600,
+      advanced: true,
+    },
   ],
 
   async checkStatus(settings, ctx) {
     const endpoint = settingString(settings, 'endpoint').trim();
     if (!endpoint) return { ok: false, message: 'No endpoint configured.' };
     try {
-      const res = await fetchChecked(ctx.fetch, joinUrl(endpoint, 'health'), { signal: withTimeout(ctx.signal, 8000) }, 'Health check');
-      const json = await readJson<{ name?: string; version?: string; protocol?: string; capabilities?: string[]; model?: string }>(
-        res,
+      const res = await fetchChecked(
+        ctx.fetch,
+        joinUrl(endpoint, 'health'),
+        { signal: withTimeout(ctx.signal, 8000) },
         'Health check',
       );
+      const json = await readJson<{
+        name?: string;
+        version?: string;
+        protocol?: string;
+        capabilities?: string[];
+        model?: string;
+      }>(res, 'Health check');
       return {
         ok: true,
         message: `Connected to ${json.name ?? 'server'}${json.version ? ` ${json.version}` : ''}.`,

@@ -38,14 +38,70 @@ export interface DirectionInfo {
 const S2 = Math.SQRT1_2;
 
 const INFO: Record<Direction, DirectionInfo> = {
-  N: { id: 'N', name: 'North', angle: 0, facing: { x: 0, y: 1 }, view: 'back view', compass: { col: 1, row: 0 } },
-  NE: { id: 'NE', name: 'Northeast', angle: 45, facing: { x: S2, y: S2 }, view: 'three-quarter back view, turned to the right', compass: { col: 2, row: 0 } },
-  E: { id: 'E', name: 'East', angle: 90, facing: { x: 1, y: 0 }, view: 'side view facing right', compass: { col: 2, row: 1 } },
-  SE: { id: 'SE', name: 'Southeast', angle: 135, facing: { x: S2, y: -S2 }, view: 'three-quarter front view, turned to the right', compass: { col: 2, row: 2 } },
-  S: { id: 'S', name: 'South', angle: 180, facing: { x: 0, y: -1 }, view: 'front view', compass: { col: 1, row: 2 } },
-  SW: { id: 'SW', name: 'Southwest', angle: 225, facing: { x: -S2, y: -S2 }, view: 'three-quarter front view, turned to the left', compass: { col: 0, row: 2 } },
-  W: { id: 'W', name: 'West', angle: 270, facing: { x: -1, y: 0 }, view: 'side view facing left', compass: { col: 0, row: 1 } },
-  NW: { id: 'NW', name: 'Northwest', angle: 315, facing: { x: -S2, y: S2 }, view: 'three-quarter back view, turned to the left', compass: { col: 0, row: 0 } },
+  N: {
+    id: 'N',
+    name: 'North',
+    angle: 0,
+    facing: { x: 0, y: 1 },
+    view: 'back view',
+    compass: { col: 1, row: 0 },
+  },
+  NE: {
+    id: 'NE',
+    name: 'Northeast',
+    angle: 45,
+    facing: { x: S2, y: S2 },
+    view: 'three-quarter back view, turned to the right',
+    compass: { col: 2, row: 0 },
+  },
+  E: {
+    id: 'E',
+    name: 'East',
+    angle: 90,
+    facing: { x: 1, y: 0 },
+    view: 'side view facing right',
+    compass: { col: 2, row: 1 },
+  },
+  SE: {
+    id: 'SE',
+    name: 'Southeast',
+    angle: 135,
+    facing: { x: S2, y: -S2 },
+    view: 'three-quarter front view, turned to the right',
+    compass: { col: 2, row: 2 },
+  },
+  S: {
+    id: 'S',
+    name: 'South',
+    angle: 180,
+    facing: { x: 0, y: -1 },
+    view: 'front view',
+    compass: { col: 1, row: 2 },
+  },
+  SW: {
+    id: 'SW',
+    name: 'Southwest',
+    angle: 225,
+    facing: { x: -S2, y: -S2 },
+    view: 'three-quarter front view, turned to the left',
+    compass: { col: 0, row: 2 },
+  },
+  W: {
+    id: 'W',
+    name: 'West',
+    angle: 270,
+    facing: { x: -1, y: 0 },
+    view: 'side view facing left',
+    compass: { col: 0, row: 1 },
+  },
+  NW: {
+    id: 'NW',
+    name: 'Northwest',
+    angle: 315,
+    facing: { x: -S2, y: S2 },
+    view: 'three-quarter back view, turned to the left',
+    compass: { col: 0, row: 0 },
+  },
 };
 
 export function isDirection(value: unknown): value is Direction {
@@ -93,7 +149,8 @@ export function isDiagonal(d: Direction): boolean {
 /** Directions sorted by angular distance from `from` (nearest first, `from` excluded). */
 export function directionsByDistance(from: Direction): Direction[] {
   return DIRECTIONS.filter((d) => d !== from).sort(
-    (a, b) => angleBetween(from, a) - angleBetween(from, b) || directionIndex(a) - directionIndex(b),
+    (a, b) =>
+      angleBetween(from, a) - angleBetween(from, b) || directionIndex(a) - directionIndex(b),
   );
 }
 

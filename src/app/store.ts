@@ -1,6 +1,11 @@
 import { useSyncExternalStore } from 'react';
 import type { Direction } from '../core/directions';
-import { createEmptyProject, EMPTY_HISTORY, type HistoryState, type Project } from '../core/project';
+import {
+  createEmptyProject,
+  EMPTY_HISTORY,
+  type HistoryState,
+  type Project,
+} from '../core/project';
 import type { ProviderStatus } from '../core/providers';
 import { loadSettings, type AppSettings } from '../core/storage';
 
@@ -114,7 +119,10 @@ export function getState(): AppState {
 }
 
 export function setUi(patch: Partial<UiState> | ((ui: UiState) => Partial<UiState>)): void {
-  store.setState((s) => ({ ...s, ui: { ...s.ui, ...(typeof patch === 'function' ? patch(s.ui) : patch) } }));
+  store.setState((s) => ({
+    ...s,
+    ui: { ...s.ui, ...(typeof patch === 'function' ? patch(s.ui) : patch) },
+  }));
 }
 
 export function setJob(direction: Direction, job: Job | null): void {

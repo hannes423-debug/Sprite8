@@ -21,14 +21,17 @@ export function openKeyValueDb(name: string, stores: string[], version = 1): Pro
     }
     const req = indexedDB.open(name, version);
     req.onupgradeneeded = () => {
-      for (const s of stores) if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s);
+      for (const s of stores)
+        if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s);
     };
     req.onerror = () => reject(req.error ?? new Error('Could not open IndexedDB'));
     req.onsuccess = () => {
       const db = req.result;
-      const tx = (store: string, mode: IDBTransactionMode) => db.transaction(store, mode).objectStore(store);
+      const tx = (store: string, mode: IDBTransactionMode) =>
+        db.transaction(store, mode).objectStore(store);
       resolve({
-        get: <T>(store: string, key: string) => promisify(tx(store, 'readonly').get(key)) as Promise<T | undefined>,
+        get: <T>(store: string, key: string) =>
+          promisify(tx(store, 'readonly').get(key)) as Promise<T | undefined>,
         put: async (store, key, value) => {
           await promisify(tx(store, 'readwrite').put(value, key));
         },

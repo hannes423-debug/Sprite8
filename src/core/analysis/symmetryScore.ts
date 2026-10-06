@@ -20,10 +20,23 @@ export interface SymmetryScore {
 export function symmetryScore(img: RasterImage, alphaThreshold = 127): SymmetryScore {
   const maxW = 256;
   const scale = img.width > maxW ? maxW / img.width : 1;
-  const src = scale < 1 ? scaleNearest(img, Math.round(img.width * scale), Math.max(1, Math.round(img.height * scale))) : img;
+  const src =
+    scale < 1
+      ? scaleNearest(
+          img,
+          Math.round(img.width * scale),
+          Math.max(1, Math.round(img.height * scale)),
+        )
+      : img;
   const { width: w, height: h, data: d } = src;
   const opaque = (x: number, y: number) => d[(y * w + x) * 4 + 3] > alphaThreshold;
-  const empty: SymmetryScore = { score: 0, maskScore: 0, colorScore: 0, axisX: img.width / 2, verdict: 'uncertain' };
+  const empty: SymmetryScore = {
+    score: 0,
+    maskScore: 0,
+    colorScore: 0,
+    axisX: img.width / 2,
+    verdict: 'uncertain',
+  };
   if (w === 0 || h === 0) return empty;
 
   let bestAxis = w / 2;
@@ -42,7 +55,10 @@ export function symmetryScore(img: RasterImage, alphaThreshold = 127): SymmetryS
       }
     }
     const iou = union ? inter / union : 0;
-    if (iou > bestIou + 1e-9 || (Math.abs(iou - bestIou) <= 1e-9 && Math.abs(twoA / 2 - w / 2) < Math.abs(bestAxis - w / 2))) {
+    if (
+      iou > bestIou + 1e-9 ||
+      (Math.abs(iou - bestIou) <= 1e-9 && Math.abs(twoA / 2 - w / 2) < Math.abs(bestAxis - w / 2))
+    ) {
       bestIou = iou;
       bestAxis = twoA / 2;
     }

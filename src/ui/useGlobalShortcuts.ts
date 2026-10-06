@@ -24,7 +24,11 @@ function compassStep(from: Direction, dx: number, dy: number): Direction {
   }
   c = Math.max(0, Math.min(2, c));
   r = Math.max(0, Math.min(2, r));
-  return DIRECTIONS.find((d) => directionInfo(d).compass.col === c && directionInfo(d).compass.row === r) ?? from;
+  return (
+    DIRECTIONS.find(
+      (d) => directionInfo(d).compass.col === c && directionInfo(d).compass.row === r,
+    ) ?? from
+  );
 }
 
 /** Keyboard shortcuts and clipboard paste for the main screen (the editor has its own). */
@@ -61,15 +65,28 @@ export function useGlobalShortcuts(): void {
         selectDirection(DIRECTIONS[Number(key) - 1]);
         return;
       }
-      const arrows: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-      if (arrows[key] && !(e.target instanceof HTMLButtonElement && e.target.closest('[role="radiogroup"]'))) {
+      const arrows: Record<string, [number, number]> = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+      };
+      if (
+        arrows[key] &&
+        !(e.target instanceof HTMLButtonElement && e.target.closest('[role="radiogroup"]'))
+      ) {
         e.preventDefault();
         const next = compassStep(ui.selected, ...arrows[key]);
         selectDirection(next);
-        document.querySelector<HTMLElement>(`[data-testid="cell-${next}"]`)?.focus({ preventScroll: true });
+        document
+          .querySelector<HTMLElement>(`[data-testid="cell-${next}"]`)
+          ?.focus({ preventScroll: true });
         return;
       }
-      if (key === 'Enter' && (e.target === document.body || (e.target as HTMLElement).classList?.contains('dir-cell'))) {
+      if (
+        key === 'Enter' &&
+        (e.target === document.body || (e.target as HTMLElement).classList?.contains('dir-cell'))
+      ) {
         e.preventDefault();
         openEditor();
         return;
@@ -91,13 +108,19 @@ export function useGlobalShortcuts(): void {
     const onPaste = (e: ClipboardEvent) => {
       const { ui, project } = getState();
       if (ui.editorOpen || ui.dialog || isTypingTarget(e.target)) return;
-      const file = Array.from(e.clipboardData?.files ?? []).find((f) => f.type.startsWith('image/'));
+      const file = Array.from(e.clipboardData?.files ?? []).find((f) =>
+        f.type.startsWith('image/'),
+      );
       if (!file) return;
       e.preventDefault();
       if (!project.source) void importSourceFile(file);
       else {
         void importDirectionFile(ui.selected, file);
-        toast('info', `Pasted image into ${ui.selected}.`, 'Undo with Ctrl+Z. To replace the source instead, use "Replace" in the Source panel.');
+        toast(
+          'info',
+          `Pasted image into ${ui.selected}.`,
+          'Undo with Ctrl+Z. To replace the source instead, use "Replace" in the Source panel.',
+        );
       }
     };
     window.addEventListener('keydown', onKey);

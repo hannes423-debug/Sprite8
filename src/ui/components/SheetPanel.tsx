@@ -1,11 +1,33 @@
 import { useDeferredValue, useMemo } from 'react';
-import { copyMetadata, exportIndividualPngs, exportJson, exportSheetPng, exportZip, updateSheet } from '../../app/actions/export';
+import {
+  copyMetadata,
+  exportIndividualPngs,
+  exportJson,
+  exportSheetPng,
+  exportZip,
+  updateSheet,
+} from '../../app/actions/export';
 import { useAppState } from '../../app/store';
-import { GRID_PRESETS, ORDER_PRESETS, matchOrderPreset, type GridPresetId, type OrderPresetId } from '../../core/directions';
+import {
+  GRID_PRESETS,
+  ORDER_PRESETS,
+  matchOrderPreset,
+  type GridPresetId,
+  type OrderPresetId,
+} from '../../core/directions';
 import { buildSheet } from '../../core/export';
 import type { SheetSettings, TargetResolution } from '../../core/project';
 import { SpriteCanvas } from '../canvas/SpriteCanvas';
-import { Button, Disclosure, Field, Notice, NumberInput, Segmented, Select, Toggle } from './controls';
+import {
+  Button,
+  Disclosure,
+  Field,
+  Notice,
+  NumberInput,
+  Segmented,
+  Select,
+  Toggle,
+} from './controls';
 
 const TARGETS: Array<{ value: TargetResolution; label: string }> = [
   { value: 'original', label: 'Original' },
@@ -33,7 +55,10 @@ function OrderEditor({ settings }: { settings: SheetSettings }) {
           <Select<OrderPresetId>
             id={id}
             value={preset}
-            options={[...ORDER_PRESETS.map((p) => ({ value: p.id, label: p.label })), { value: 'custom', label: 'Custom order' }]}
+            options={[
+              ...ORDER_PRESETS.map((p) => ({ value: p.id, label: p.label })),
+              { value: 'custom', label: 'Custom order' },
+            ]}
             onChange={(v) => {
               const p = ORDER_PRESETS.find((x) => x.id === v);
               if (p) updateSheet({ order: [...p.order] });
@@ -46,10 +71,20 @@ function OrderEditor({ settings }: { settings: SheetSettings }) {
         {settings.order.map((d, i) => (
           <span className="order-item" key={d}>
             {d}
-            <button type="button" aria-label={`Move ${d} earlier`} disabled={i === 0} onClick={() => move(i, -1)}>
+            <button
+              type="button"
+              aria-label={`Move ${d} earlier`}
+              disabled={i === 0}
+              onClick={() => move(i, -1)}
+            >
               ◀
             </button>
-            <button type="button" aria-label={`Move ${d} later`} disabled={i === settings.order.length - 1} onClick={() => move(i, 1)}>
+            <button
+              type="button"
+              aria-label={`Move ${d} later`}
+              disabled={i === settings.order.length - 1}
+              onClick={() => move(i, 1)}
+            >
               ▶
             </button>
           </span>
@@ -68,13 +103,24 @@ export function SheetPanel() {
   const pixelated = settings.pixelPreservation || settings.nearestNeighbor;
 
   return (
-    <section className="card" id="step-export" aria-labelledby="sheet-title" data-testid="sheet-panel">
+    <section
+      className="card"
+      id="step-export"
+      aria-labelledby="sheet-title"
+      data-testid="sheet-panel"
+    >
       <div className="card-head">
         <span className="step-num">9</span>
         <h2 id="sheet-title">Sprite sheet</h2>
       </div>
       <div className="sheet-preview">
-        <SpriteCanvas image={sheet?.image ?? null} pixelated={pixelated} className="dir-canvas" testId="sheet-preview" ariaLabel="Sprite sheet preview" />
+        <SpriteCanvas
+          image={sheet?.image ?? null}
+          pixelated={pixelated}
+          className="dir-canvas"
+          testId="sheet-preview"
+          ariaLabel="Sprite sheet preview"
+        />
       </div>
       <div className="sheet-dims" data-testid="sheet-dims">
         {sheet ? (
@@ -83,7 +129,8 @@ export function SheetPanel() {
               {sheet.image.width} × {sheet.image.height}px · {sheet.columns}×{sheet.rows}
             </span>
             <span>
-              cell {sheet.cellWidth}×{sheet.cellHeight} · anchor {sheet.anchor.x},{sheet.anchor.y} · ×{Math.round(sheet.scale * 100) / 100}
+              cell {sheet.cellWidth}×{sheet.cellHeight} · anchor {sheet.anchor.x},{sheet.anchor.y} ·
+              ×{Math.round(sheet.scale * 100) / 100}
             </span>
           </>
         ) : (
@@ -95,23 +142,77 @@ export function SheetPanel() {
       <div className="grid-2">
         <Field label="Layout">
           {(id) => (
-            <Select<GridPresetId> id={id} value={settings.grid} options={GRID_PRESETS.map((p) => ({ value: p.id, label: p.label }))} onChange={(grid) => updateSheet({ grid })} testId="sheet-layout" />
+            <Select<GridPresetId>
+              id={id}
+              value={settings.grid}
+              options={GRID_PRESETS.map((p) => ({ value: p.id, label: p.label }))}
+              onChange={(grid) => updateSheet({ grid })}
+              testId="sheet-layout"
+            />
           )}
         </Field>
         <Field label="Cell size">
-          {(id) => <Select<TargetResolution> id={id} value={settings.target} options={TARGETS} onChange={(target) => updateSheet({ target })} testId="sheet-target" />}
+          {(id) => (
+            <Select<TargetResolution>
+              id={id}
+              value={settings.target}
+              options={TARGETS}
+              onChange={(target) => updateSheet({ target })}
+              testId="sheet-target"
+            />
+          )}
         </Field>
       </div>
       {settings.grid === 'custom' ? (
         <div className="grid-2">
-          <Field label="Columns">{(id) => <NumberInput id={id} value={settings.columns} min={1} max={8} onChange={(columns) => updateSheet({ columns })} />}</Field>
-          <Field label="Rows">{(id) => <NumberInput id={id} value={settings.rows} min={1} max={8} onChange={(rows) => updateSheet({ rows })} />}</Field>
+          <Field label="Columns">
+            {(id) => (
+              <NumberInput
+                id={id}
+                value={settings.columns}
+                min={1}
+                max={8}
+                onChange={(columns) => updateSheet({ columns })}
+              />
+            )}
+          </Field>
+          <Field label="Rows">
+            {(id) => (
+              <NumberInput
+                id={id}
+                value={settings.rows}
+                min={1}
+                max={8}
+                onChange={(rows) => updateSheet({ rows })}
+              />
+            )}
+          </Field>
         </div>
       ) : null}
       {settings.target === 'custom' ? (
         <div className="grid-2">
-          <Field label="Cell width">{(id) => <NumberInput id={id} value={settings.customWidth} min={4} max={1024} onChange={(customWidth) => updateSheet({ customWidth })} />}</Field>
-          <Field label="Cell height">{(id) => <NumberInput id={id} value={settings.customHeight} min={4} max={1024} onChange={(customHeight) => updateSheet({ customHeight })} />}</Field>
+          <Field label="Cell width">
+            {(id) => (
+              <NumberInput
+                id={id}
+                value={settings.customWidth}
+                min={4}
+                max={1024}
+                onChange={(customWidth) => updateSheet({ customWidth })}
+              />
+            )}
+          </Field>
+          <Field label="Cell height">
+            {(id) => (
+              <NumberInput
+                id={id}
+                value={settings.customHeight}
+                min={4}
+                max={1024}
+                onChange={(customHeight) => updateSheet({ customHeight })}
+              />
+            )}
+          </Field>
         </div>
       ) : null}
 
@@ -137,7 +238,11 @@ export function SheetPanel() {
             label="Export scale"
             value={String(settings.exportScale)}
             onChange={(v) => updateSheet({ exportScale: Number(v) })}
-            options={['1', '2', '3', '4'].map((v) => ({ value: v, label: `${v}×`, testId: `export-scale-${v}` }))}
+            options={['1', '2', '3', '4'].map((v) => ({
+              value: v,
+              label: `${v}×`,
+              testId: `export-scale-${v}`,
+            }))}
           />
         )}
       </Field>
@@ -145,10 +250,34 @@ export function SheetPanel() {
       <Disclosure summary="Order, padding, anchor & background" testId="sheet-advanced">
         <OrderEditor settings={settings} />
         <div className="grid-2">
-          <Field label="Padding (px)">{(id) => <NumberInput id={id} value={settings.padding} min={0} max={64} onChange={(padding) => updateSheet({ padding })} testId="sheet-padding" />}</Field>
-          <Field label="Spacing between cells">{(id) => <NumberInput id={id} value={settings.spacing} min={0} max={64} onChange={(spacing) => updateSheet({ spacing })} />}</Field>
+          <Field label="Padding (px)">
+            {(id) => (
+              <NumberInput
+                id={id}
+                value={settings.padding}
+                min={0}
+                max={64}
+                onChange={(padding) => updateSheet({ padding })}
+                testId="sheet-padding"
+              />
+            )}
+          </Field>
+          <Field label="Spacing between cells">
+            {(id) => (
+              <NumberInput
+                id={id}
+                value={settings.spacing}
+                min={0}
+                max={64}
+                onChange={(spacing) => updateSheet({ spacing })}
+              />
+            )}
+          </Field>
         </div>
-        <Field label="Anchor point" help="The point between the feet on the ground line. Engines use it as the sprite origin.">
+        <Field
+          label="Anchor point"
+          help="The point between the feet on the ground line. Engines use it as the sprite origin."
+        >
           {(id) => (
             <Select
               id={id}
@@ -164,8 +293,28 @@ export function SheetPanel() {
         </Field>
         {settings.anchorMode === 'custom' ? (
           <div className="grid-2">
-            <Field label="Anchor x">{(id) => <NumberInput id={id} value={settings.anchorX} min={0} max={1024} onChange={(anchorX) => updateSheet({ anchorX })} />}</Field>
-            <Field label="Anchor y">{(id) => <NumberInput id={id} value={settings.anchorY} min={0} max={1024} onChange={(anchorY) => updateSheet({ anchorY })} />}</Field>
+            <Field label="Anchor x">
+              {(id) => (
+                <NumberInput
+                  id={id}
+                  value={settings.anchorX}
+                  min={0}
+                  max={1024}
+                  onChange={(anchorX) => updateSheet({ anchorX })}
+                />
+              )}
+            </Field>
+            <Field label="Anchor y">
+              {(id) => (
+                <NumberInput
+                  id={id}
+                  value={settings.anchorY}
+                  min={0}
+                  max={1024}
+                  onChange={(anchorY) => updateSheet({ anchorY })}
+                />
+              )}
+            </Field>
           </div>
         ) : null}
         <Field label="Centring">
@@ -194,7 +343,12 @@ export function SheetPanel() {
                 ]}
               />
               {settings.background === 'color' ? (
-                <input type="color" value={settings.backgroundColor} onChange={(e) => updateSheet({ backgroundColor: e.target.value })} aria-label="Background colour" />
+                <input
+                  type="color"
+                  value={settings.backgroundColor}
+                  onChange={(e) => updateSheet({ backgroundColor: e.target.value })}
+                  aria-label="Background colour"
+                />
               ) : null}
             </div>
           )}
@@ -217,19 +371,44 @@ export function SheetPanel() {
       </Disclosure>
 
       <div className="export-buttons">
-        <Button variant="primary" icon="download" disabled={!project.source || !!busy} onClick={() => void exportZip()} testId="export-zip">
+        <Button
+          variant="primary"
+          icon="download"
+          disabled={!project.source || !!busy}
+          onClick={() => void exportZip()}
+          testId="export-zip"
+        >
           Download all (ZIP)
         </Button>
-        <Button icon="sheet" disabled={!project.source || !!busy} onClick={() => void exportSheetPng()} testId="export-sheet">
+        <Button
+          icon="sheet"
+          disabled={!project.source || !!busy}
+          onClick={() => void exportSheetPng()}
+          testId="export-sheet"
+        >
           Sheet PNG
         </Button>
-        <Button icon="layers" disabled={!project.source || !!busy} onClick={() => void exportIndividualPngs()} testId="export-individual">
+        <Button
+          icon="layers"
+          disabled={!project.source || !!busy}
+          onClick={() => void exportIndividualPngs()}
+          testId="export-individual"
+        >
           8 PNGs
         </Button>
-        <Button icon="download" disabled={!project.source || !!busy} onClick={() => void exportJson()} testId="export-json">
+        <Button
+          icon="download"
+          disabled={!project.source || !!busy}
+          onClick={() => void exportJson()}
+          testId="export-json"
+        >
           JSON
         </Button>
-        <Button icon="copy" disabled={!project.source || !!busy} onClick={() => void copyMetadata()}>
+        <Button
+          icon="copy"
+          disabled={!project.source || !!busy}
+          onClick={() => void copyMetadata()}
+        >
           Copy JSON
         </Button>
       </div>

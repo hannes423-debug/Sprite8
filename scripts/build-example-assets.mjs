@@ -10,7 +10,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 function hex(h) {
   const v = h.replace('#', '');
-  return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16), 255];
+  return [
+    parseInt(v.slice(0, 2), 16),
+    parseInt(v.slice(2, 4), 16),
+    parseInt(v.slice(4, 6), 16),
+    255,
+  ];
 }
 
 class Canvas {
@@ -36,7 +41,13 @@ class Canvas {
   /** Rectangle with the four corner pixels left out (a rounded look). */
   round(x0, y0, x1, y1, c) {
     this.rect(x0, y0, x1, y1, c);
-    for (const [x, y] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) this.data.fill(0, (y * this.w + x) * 4, (y * this.w + x) * 4 + 4);
+    for (const [x, y] of [
+      [x0, y0],
+      [x1, y0],
+      [x0, y1],
+      [x1, y1],
+    ])
+      this.data.fill(0, (y * this.w + x) * 4, (y * this.w + x) * 4 + 4);
   }
   line(x0, y0, x1, y1, c, thick = 1) {
     const dx = Math.abs(x1 - x0);
@@ -67,7 +78,13 @@ class Canvas {
     for (let y = 0; y < this.h; y++) {
       for (let x = 0; x < this.w; x++) {
         if (copy.opaque(x, y)) continue;
-        if (copy.opaque(x - 1, y) || copy.opaque(x + 1, y) || copy.opaque(x, y - 1) || copy.opaque(x, y + 1)) this.set(x, y, c);
+        if (
+          copy.opaque(x - 1, y) ||
+          copy.opaque(x + 1, y) ||
+          copy.opaque(x, y - 1) ||
+          copy.opaque(x, y + 1)
+        )
+          this.set(x, y, c);
       }
     }
   }
@@ -87,7 +104,8 @@ class Canvas {
       }
     }
     const out = new Canvas(x1 - x0 + 1 + pad * 2, y1 - y0 + 1 + pad * 2);
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) out.set(x - x0 + pad, y - y0 + pad, this.get(x, y));
+    for (let y = y0; y <= y1; y++)
+      for (let x = x0; x <= x1; x++) out.set(x - x0 + pad, y - y0 + pad, this.get(x, y));
     return out;
   }
   scaled(k, bg) {
@@ -162,7 +180,21 @@ function hockeyPlayer() {
   c.rect(13, 31, 30, 31, P.redSh);
   c.rect(28, 22, 30, 28, P.redSh);
   // Number 9 on the chest (3×5)
-  for (const [x, y] of [[20, 21], [21, 21], [22, 21], [20, 22], [22, 22], [20, 23], [21, 23], [22, 23], [22, 24], [20, 25], [21, 25], [22, 25]]) c.set(x, y, P.white);
+  for (const [x, y] of [
+    [20, 21],
+    [21, 21],
+    [22, 21],
+    [20, 22],
+    [22, 22],
+    [20, 23],
+    [21, 23],
+    [22, 23],
+    [22, 24],
+    [20, 25],
+    [21, 25],
+    [22, 25],
+  ])
+    c.set(x, y, P.white);
   // Right arm (viewer's left) reaches down to the stick near the knee
   c.rect(9, 18, 12, 30, P.red);
   c.rect(9, 25, 12, 26, P.white);
@@ -257,7 +289,13 @@ function appIcon() {
   c.rect(7, 12, 8, 14, accent);
   c.rect(1, 7, 3, 8, accent);
   c.rect(12, 7, 14, 8, accent);
-  for (const [x, y] of [[3, 3], [11, 3], [3, 11], [11, 11]]) c.rect(x, y, x + 1, y + 1, dim);
+  for (const [x, y] of [
+    [3, 3],
+    [11, 3],
+    [3, 11],
+    [11, 11],
+  ])
+    c.rect(x, y, x + 1, y + 1, dim);
   c.rect(6, 6, 9, 9, hex('#f4c27a'));
   return c;
 }

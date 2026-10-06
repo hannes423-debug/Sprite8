@@ -58,7 +58,8 @@ export function selectDirection(direction: Direction): void {
 }
 
 export function openEditor(direction?: Direction): void {
-  setUi((ui) => ({ editorOpen: true, selected: direction ?? ui.selected }));
+  // Notifications about the main screen would only cover the canvas.
+  setUi((ui) => ({ editorOpen: true, selected: direction ?? ui.selected, toasts: [] }));
 }
 
 export function closeEditor(): void {

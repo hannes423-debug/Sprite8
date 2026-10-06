@@ -1,9 +1,15 @@
 /** Triggers a browser download of `data`. */
-export function downloadBlob(data: Blob | Uint8Array | string, fileName: string, type = 'application/octet-stream'): void {
+export function downloadBlob(
+  data: Blob | Uint8Array | string,
+  fileName: string,
+  type = 'application/octet-stream',
+): void {
   const blob =
     data instanceof Blob
       ? data
-      : new Blob([typeof data === 'string' ? data : (data as Uint8Array<ArrayBuffer>)], { type: typeof data === 'string' ? 'application/json' : type });
+      : new Blob([typeof data === 'string' ? data : (data as Uint8Array<ArrayBuffer>)], {
+          type: typeof data === 'string' ? 'application/json' : type,
+        });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

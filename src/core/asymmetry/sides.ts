@@ -55,7 +55,10 @@ export function sidePlacement(direction: Direction, side: BodySide): SidePlaceme
 }
 
 /** How much of the character's front / back faces the camera. */
-export function frontBackPlacement(direction: Direction): { front: DepthPlacement; back: DepthPlacement } {
+export function frontBackPlacement(direction: Direction): {
+  front: DepthPlacement;
+  back: DepthPlacement;
+} {
   const fy = directionInfo(direction).facing.y;
   const front = -fy > T ? 'near' : -fy < -T ? 'far' : 'level';
   const back = fy > T ? 'near' : fy < -T ? 'far' : 'level';
@@ -102,7 +105,10 @@ export function describeSide(direction: Direction, side: BodySide): string {
 }
 
 /** Compact marker text for overlays: e.g. "R ◀ near". */
-export function sideMarker(direction: Direction, side: BodySide): { label: string; screen: ScreenSide; placement: DepthPlacement } {
+export function sideMarker(
+  direction: Direction,
+  side: BodySide,
+): { label: string; screen: ScreenSide; placement: DepthPlacement } {
   const p = sidePlacement(direction, side);
   return { label: side === 'right' ? 'R' : 'L', screen: p.screen, placement: p.placement };
 }

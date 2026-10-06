@@ -24,7 +24,10 @@ export interface ExportSelection {
   json: boolean;
 }
 
-async function png(codec: ImageCodec, img: Parameters<ImageCodec['encodePng']>[0]): Promise<Uint8Array> {
+async function png(
+  codec: ImageCodec,
+  img: Parameters<ImageCodec['encodePng']>[0],
+): Promise<Uint8Array> {
   return new Uint8Array(await (await codec.encodePng(img)).arrayBuffer());
 }
 
@@ -39,10 +42,15 @@ export async function buildExport(
   const names = exportNames(project.setup.name, sheet.animation.name, sheet.frameCount);
   const metadata = buildMetadata(project, sheet, names);
   const files: ExportFile[] = [];
-  if (selection.sheet) files.push({ name: names.sheet, data: await png(codec, sheet.image), type: 'image/png' });
+  if (selection.sheet)
+    files.push({ name: names.sheet, data: await png(codec, sheet.image), type: 'image/png' });
   if (selection.cells) {
     for (const cell of sheet.cells) {
-      files.push({ name: names.cell(cell.direction, cell.frame), data: await png(codec, cell.image), type: 'image/png' });
+      files.push({
+        name: names.cell(cell.direction, cell.frame),
+        data: await png(codec, cell.image),
+        type: 'image/png',
+      });
     }
   }
   if (selection.json) {

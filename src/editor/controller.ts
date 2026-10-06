@@ -67,7 +67,15 @@ export interface EditorCallbacks {
 type Gesture =
   | { kind: 'stroke'; lastX: number; lastY: number; erase: boolean; label: string }
   | { kind: 'pan'; startX: number; startY: number; panX: number; panY: number }
-  | { kind: 'pinch'; dist: number; zoom: number; midX: number; midY: number; panX: number; panY: number }
+  | {
+      kind: 'pinch';
+      dist: number;
+      zoom: number;
+      midX: number;
+      midY: number;
+      panX: number;
+      panY: number;
+    }
   | { kind: 'select'; startX: number; startY: number; moved: boolean }
   | { kind: 'move'; startX: number; startY: number; origX: number; origY: number };
 
@@ -168,7 +176,9 @@ export class EditorController {
 
   /** The visible pixels including a floating selection. */
   composite(): RasterImage {
-    return this.floating ? blit(this.floating.base, this.floating.image, this.floating.x, this.floating.y, 'over') : this.displayed;
+    return this.floating
+      ? blit(this.floating.base, this.floating.image, this.floating.x, this.floating.y, 'over')
+      : this.displayed;
   }
 
   /** External update (undo, regenerate, switching direction). */
@@ -217,7 +227,10 @@ export class EditorController {
   fit(): void {
     if (this.stage.w <= 0 || this.stage.h <= 0) return;
     const margin = Math.min(48, Math.max(12, Math.min(this.stage.w, this.stage.h) * 0.06));
-    let zoom = Math.min((this.stage.w - margin * 2) / this.width, (this.stage.h - margin * 2) / this.height);
+    let zoom = Math.min(
+      (this.stage.w - margin * 2) / this.width,
+      (this.stage.h - margin * 2) / this.height,
+    );
     if (zoom >= 1) zoom = Math.floor(zoom);
     zoom = Math.max(0.25, Math.min(64, zoom));
     this.view = {
@@ -239,7 +252,10 @@ export class EditorController {
 
   zoomStep(dir: 1 | -1, sx?: number, sy?: number): void {
     const z = this.view.zoom;
-    const next = dir > 0 ? ZOOM_STEPS.find((s) => s > z + 1e-6) ?? 64 : [...ZOOM_STEPS].reverse().find((s) => s < z - 1e-6) ?? 0.25;
+    const next =
+      dir > 0
+        ? (ZOOM_STEPS.find((s) => s > z + 1e-6) ?? 64)
+        : ([...ZOOM_STEPS].reverse().find((s) => s < z - 1e-6) ?? 0.25);
     this.zoomTo(next, sx, sy);
   }
 
@@ -258,7 +274,8 @@ export class EditorController {
     if (this.tool === 'select') {
       const h = this.hover;
       if (h && this.floating && this.inRect(h.x, h.y, this.floatingRect()!)) return 'move';
-      if (h && this.selection && !this.floating && this.inRect(h.x, h.y, this.selection)) return 'move';
+      if (h && this.selection && !this.floating && this.inRect(h.x, h.y, this.selection))
+        return 'move';
     }
     return 'crosshair';
   }
@@ -307,7 +324,13 @@ export class EditorController {
     }
     if (this.pointers.size > 2) return;
     if (p.button === 1 || this.tool === 'pan' || this.spaceDown) {
-      this.gesture = { kind: 'pan', startX: p.x, startY: p.y, panX: this.view.panX, panY: this.view.panY };
+      this.gesture = {
+        kind: 'pan',
+        startX: p.x,
+        startY: p.y,
+        panX: this.view.panX,
+        panY: this.view.panY,
+      };
       this.emit();
       return;
     }
@@ -322,7 +345,13 @@ export class EditorController {
         const erase = this.tool === 'eraser' || p.button === 2;
         this.work = cloneRaster(this.displayed === this.image ? this.image : this.composite());
         if (this.floating) this.floating = null;
-        this.gesture = { kind: 'stroke', lastX: px.x, lastY: px.y, erase, label: erase ? 'Erase' : 'Paint' };
+        this.gesture = {
+          kind: 'stroke',
+          lastX: px.x,
+          lastY: px.y,
+          erase,
+          label: erase ? 'Erase' : 'Paint',
+        };
         this.paint(px.x, px.y, erase);
         break;
       }
@@ -365,7 +394,11 @@ export class EditorController {
       return;
     }
     if (g.kind === 'pan') {
-      this.view = { ...this.view, panX: g.panX + (p.x - g.startX), panY: g.panY + (p.y - g.startY) };
+      this.view = {
+        ...this.view,
+        panX: g.panX + (p.x - g.startX),
+        panY: g.panY + (p.y - g.startY),
+      };
       this.emit();
       return;
     }
@@ -383,10 +416,19 @@ export class EditorController {
       const x1 = Math.max(0, Math.min(this.width - 1, px.x));
       const y1 = Math.max(0, Math.min(this.height - 1, px.y));
       g.moved = g.moved || px.x !== g.startX || px.y !== g.startY;
-      this.selection = { x: Math.min(x0, x1), y: Math.min(y0, y1), width: Math.abs(x1 - x0) + 1, height: Math.abs(y1 - y0) + 1 };
+      this.selection = {
+        x: Math.min(x0, x1),
+        y: Math.min(y0, y1),
+        width: Math.abs(x1 - x0) + 1,
+        height: Math.abs(y1 - y0) + 1,
+      };
       this.emit();
     } else if (g.kind === 'move' && this.floating) {
-      this.floating = { ...this.floating, x: g.origX + (px.x - g.startX), y: g.origY + (px.y - g.startY) };
+      this.floating = {
+        ...this.floating,
+        x: g.origX + (px.x - g.startX),
+        y: g.origY + (px.y - g.startY),
+      };
       this.emit();
     }
   }
@@ -480,12 +522,24 @@ export class EditorController {
   private selectDown(x: number, y: number, duplicate: boolean): void {
     const fr = this.floatingRect();
     if (this.floating && fr && this.inRect(x, y, fr)) {
-      this.gesture = { kind: 'move', startX: x, startY: y, origX: this.floating.x, origY: this.floating.y };
+      this.gesture = {
+        kind: 'move',
+        startX: x,
+        startY: y,
+        origX: this.floating.x,
+        origY: this.floating.y,
+      };
       return;
     }
     if (!this.floating && this.selection && this.inRect(x, y, this.selection)) {
       this.lift(duplicate);
-      this.gesture = { kind: 'move', startX: x, startY: y, origX: this.floating!.x, origY: this.floating!.y };
+      this.gesture = {
+        kind: 'move',
+        startX: x,
+        startY: y,
+        origX: this.floating!.x,
+        origY: this.floating!.y,
+      };
       this.emit();
       return;
     }
@@ -515,7 +569,12 @@ export class EditorController {
     const f = this.floating;
     if (!f) return;
     this.floating = null;
-    this.selection = this.clampRect({ x: f.x, y: f.y, width: f.image.width, height: f.image.height });
+    this.selection = this.clampRect({
+      x: f.x,
+      y: f.y,
+      width: f.image.width,
+      height: f.image.height,
+    });
     this.commitImage(blit(f.base, f.image, f.x, f.y, 'over'), f.label);
   }
 
@@ -620,7 +679,11 @@ export class EditorController {
   }
 
   /** Applies `fn` to the floating layer, the selection, or the whole frame. */
-  private transform(label: string, fn: (img: RasterImage) => RasterImage, frameFn?: (img: RasterImage) => RasterImage): void {
+  private transform(
+    label: string,
+    fn: (img: RasterImage) => RasterImage,
+    frameFn?: (img: RasterImage) => RasterImage,
+  ): void {
     if (this.floating) {
       const f = this.floating;
       const out = fn(f.image);
@@ -648,13 +711,20 @@ export class EditorController {
   }
 
   flip(axis: 'h' | 'v'): void {
-    if (axis === 'h') this.transform('Flip', flipHorizontal, (img) => mirrorAroundAxis(img, this.anchorX));
+    if (axis === 'h')
+      this.transform('Flip', flipHorizontal, (img) => mirrorAroundAxis(img, this.anchorX));
     else this.transform('Flip', flipVertical);
   }
 
   rotate(degrees: number): void {
-    this.transform(`Rotate ${degrees}°`, (img) => rotateArbitrary(img, degrees, { expand: true }), (img) =>
-      rotateArbitrary(img, degrees, { pivotX: this.anchorX, pivotY: this.anchorY - (contentBounds(img)?.height ?? 0) / 2 }),
+    this.transform(
+      `Rotate ${degrees}°`,
+      (img) => rotateArbitrary(img, degrees, { expand: true }),
+      (img) =>
+        rotateArbitrary(img, degrees, {
+          pivotX: this.anchorX,
+          pivotY: this.anchorY - (contentBounds(img)?.height ?? 0) / 2,
+        }),
     );
   }
 
@@ -685,7 +755,10 @@ export class EditorController {
       this.emit();
       return;
     }
-    this.commitImage(multiplyAlpha(this.image, factor, this.selection ?? undefined), `Opacity ${Math.round(factor * 100)}%`);
+    this.commitImage(
+      multiplyAlpha(this.image, factor, this.selection ?? undefined),
+      `Opacity ${Math.round(factor * 100)}%`,
+    );
   }
 
   cropToSelection(): void {
@@ -759,7 +832,8 @@ export class EditorController {
       ctx.fillRect(x0, y0, W, H);
     }
     const pixelated = this.overlays.pixelated;
-    if (this.overlays.silhouette) drawGuideImage(ctx, view, this.overlays.silhouette, 0.24, pixelated);
+    if (this.overlays.silhouette)
+      drawGuideImage(ctx, view, this.overlays.silhouette, 0.24, pixelated);
     if (this.overlays.onion) {
       ctx.save();
       ctx.globalAlpha = this.overlays.onionAlpha;
@@ -770,7 +844,14 @@ export class EditorController {
     ctx.imageSmoothingEnabled = !pixelated || z < 1;
     ctx.drawImage(this.ensureBase(), x0, y0, W, H);
     const f = this.floating;
-    if (f) ctx.drawImage(rasterCanvas(f.image), x0 + f.x * z, y0 + f.y * z, f.image.width * z, f.image.height * z);
+    if (f)
+      ctx.drawImage(
+        rasterCanvas(f.image),
+        x0 + f.x * z,
+        y0 + f.y * z,
+        f.image.width * z,
+        f.image.height * z,
+      );
 
     if (this.overlays.grid && z >= 6) {
       ctx.save();
@@ -813,14 +894,34 @@ export class EditorController {
       ctx.restore();
     }
     const hv = this.hover;
-    if (hv && !this.gesture && (this.tool === 'pencil' || this.tool === 'eraser' || this.tool === 'fill' || this.tool === 'picker')) {
-      const r = this.tool === 'pencil' || this.tool === 'eraser' ? brushRect(hv.x, hv.y, this.brushSize) : { x: hv.x, y: hv.y, width: 1, height: 1 };
+    if (
+      hv &&
+      !this.gesture &&
+      (this.tool === 'pencil' ||
+        this.tool === 'eraser' ||
+        this.tool === 'fill' ||
+        this.tool === 'picker')
+    ) {
+      const r =
+        this.tool === 'pencil' || this.tool === 'eraser'
+          ? brushRect(hv.x, hv.y, this.brushSize)
+          : { x: hv.x, y: hv.y, width: 1, height: 1 };
       ctx.save();
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-      ctx.strokeRect(Math.round(x0 + r.x * z) - 0.5, Math.round(y0 + r.y * z) - 0.5, r.width * z + 1, r.height * z + 1);
+      ctx.strokeRect(
+        Math.round(x0 + r.x * z) - 0.5,
+        Math.round(y0 + r.y * z) - 0.5,
+        r.width * z + 1,
+        r.height * z + 1,
+      );
       ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-      ctx.strokeRect(Math.round(x0 + r.x * z) + 0.5, Math.round(y0 + r.y * z) + 0.5, r.width * z - 1, r.height * z - 1);
+      ctx.strokeRect(
+        Math.round(x0 + r.x * z) + 0.5,
+        Math.round(y0 + r.y * z) + 0.5,
+        r.width * z - 1,
+        r.height * z - 1,
+      );
       ctx.restore();
     }
   }

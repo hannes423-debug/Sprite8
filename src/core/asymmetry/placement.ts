@@ -1,6 +1,12 @@
 import type { CharacterFeature, Handedness } from '../character/model';
 import type { Direction } from '../directions';
-import { describeSide, frontBackPlacement, sidePlacement, type DepthPlacement, type ScreenSide } from './sides';
+import {
+  describeSide,
+  frontBackPlacement,
+  sidePlacement,
+  type DepthPlacement,
+  type ScreenSide,
+} from './sides';
 
 export interface FeatureHint {
   featureId: string;
@@ -40,12 +46,18 @@ export function featureHint(feature: CharacterFeature, direction: Direction): Fe
     };
   }
   if (feature.side === 'both') {
-    return { ...base, screen: null, visibility: 'visible', text: `${feature.name}: on both sides of the body.` };
+    return {
+      ...base,
+      screen: null,
+      visibility: 'visible',
+      text: `${feature.name}: on both sides of the body.`,
+    };
   }
   // Centre features: visibility depends on whether they sit on the front or back.
   const fb = frontBackPlacement(direction);
   if (feature.attachment === 'back') {
-    const visibility = fb.back === 'near' ? 'visible' : fb.back === 'far' ? 'hidden' : 'partly hidden';
+    const visibility =
+      fb.back === 'near' ? 'visible' : fb.back === 'far' ? 'hidden' : 'partly hidden';
     const text =
       visibility === 'visible'
         ? `${feature.name} (on the back): clearly visible.`
@@ -55,7 +67,8 @@ export function featureHint(feature: CharacterFeature, direction: Direction): Fe
     return { ...base, screen: null, visibility, text };
   }
   if (feature.attachment === 'face' || feature.attachment === 'torso') {
-    const visibility = fb.front === 'near' ? 'visible' : fb.front === 'far' ? 'hidden' : 'partly hidden';
+    const visibility =
+      fb.front === 'near' ? 'visible' : fb.front === 'far' ? 'hidden' : 'partly hidden';
     const text =
       visibility === 'visible'
         ? `${feature.name} (front): visible.`
@@ -64,7 +77,12 @@ export function featureHint(feature: CharacterFeature, direction: Direction): Fe
           : `${feature.name} (front): seen from the side.`;
     return { ...base, screen: null, visibility, text };
   }
-  return { ...base, screen: null, visibility: 'n/a', text: `${feature.name}: centred on the body.` };
+  return {
+    ...base,
+    screen: null,
+    visibility: 'n/a',
+    text: `${feature.name}: centred on the body.`,
+  };
 }
 
 export function featureHints(features: CharacterFeature[], direction: Direction): FeatureHint[] {

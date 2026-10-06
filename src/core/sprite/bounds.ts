@@ -54,7 +54,11 @@ export interface FootInfo {
  * ignored: only ground pixels inside the body's core column — the middle half
  * of all opaque pixels, widened a little — count as feet.
  */
-export function findFeet(img: RasterImage, bandFraction = 0.12, alphaThreshold = 127): FootInfo | null {
+export function findFeet(
+  img: RasterImage,
+  bandFraction = 0.12,
+  alphaThreshold = 127,
+): FootInfo | null {
   const b = contentBounds(img, alphaThreshold);
   if (!b) return null;
   // Column histogram of the whole silhouette → interquartile "body core".
@@ -108,7 +112,8 @@ export function rowCoverage(img: RasterImage, alphaThreshold = 127): Int32Array 
   const out = new Int32Array(img.height);
   for (let y = 0; y < img.height; y++) {
     let n = 0;
-    for (let x = 0; x < img.width; x++) if (img.data[(y * img.width + x) * 4 + 3] > alphaThreshold) n++;
+    for (let x = 0; x < img.width; x++)
+      if (img.data[(y * img.width + x) * 4 + 3] > alphaThreshold) n++;
     out[y] = n;
   }
   return out;

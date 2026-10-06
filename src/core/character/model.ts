@@ -20,7 +20,8 @@ export type CharacterType = 'humanoid' | 'creature' | 'robot' | 'vehicle' | 'obj
 export type SymmetryMode = 'symmetric' | 'asymmetric';
 export type Handedness = 'right' | 'left' | 'ambidextrous' | 'none';
 export type CameraAngle = 'side' | 'elevated' | 'isometric' | 'top-down';
-export type ArtStyle = 'pixel-art' | 'painted' | 'hand-drawn' | 'cartoon' | 'anime' | 'ghibli-inspired' | 'other';
+export type ArtStyle =
+  'pixel-art' | 'painted' | 'hand-drawn' | 'cartoon' | 'anime' | 'ghibli-inspired' | 'other';
 export type ShadingStyle = 'flat' | 'cel' | 'soft';
 
 export type FeatureCategory = 'clothing' | 'equipment' | 'accessory' | 'marking' | 'body';

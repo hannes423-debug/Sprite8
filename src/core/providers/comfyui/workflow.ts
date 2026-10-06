@@ -37,7 +37,9 @@ export const KNOWN_PLACEHOLDERS = [
   'SOURCE_DIRECTION',
 ] as const;
 
-export type PlaceholderValues = Partial<Record<(typeof KNOWN_PLACEHOLDERS)[number], string | number>>;
+export type PlaceholderValues = Partial<
+  Record<(typeof KNOWN_PLACEHOLDERS)[number], string | number>
+>;
 
 const WHOLE = /^\{\{([A-Z0-9_]+)\}\}$/;
 const ANY = /\{\{([A-Z0-9_]+)\}\}/g;
@@ -62,11 +64,19 @@ export function parseWorkflow(text: string): ComfyWorkflow {
   }
   const obj = json as Record<string, unknown>;
   if ('nodes' in obj && 'links' in obj) {
-    throw new Error('This is a UI-format workflow. In ComfyUI enable dev mode and use "Save (API Format)" instead.');
+    throw new Error(
+      'This is a UI-format workflow. In ComfyUI enable dev mode and use "Save (API Format)" instead.',
+    );
   }
   for (const [id, node] of Object.entries(obj)) {
     const n = node as Partial<ComfyNode> | null;
-    if (!n || typeof n !== 'object' || typeof n.class_type !== 'string' || typeof n.inputs !== 'object' || n.inputs === null) {
+    if (
+      !n ||
+      typeof n !== 'object' ||
+      typeof n.class_type !== 'string' ||
+      typeof n.inputs !== 'object' ||
+      n.inputs === null
+    ) {
       throw new Error(`Node "${id}" is not a valid API-format node (needs class_type and inputs).`);
     }
   }
@@ -87,7 +97,8 @@ export function findPlaceholders(value: unknown, into = new Set<string>()): Set<
 /** Deep-copies `template`, filling placeholders. Throws on unknown or unfilled ones. */
 export function fillWorkflow<T>(template: T, values: PlaceholderValues): T {
   const missing = new Set<string>();
-  const lookup = (key: string): string | number | undefined => (values as Record<string, string | number | undefined>)[key];
+  const lookup = (key: string): string | number | undefined =>
+    (values as Record<string, string | number | undefined>)[key];
   const walk = (v: unknown): unknown => {
     if (typeof v === 'string') {
       const whole = WHOLE.exec(v);
@@ -118,7 +129,9 @@ export function fillWorkflow<T>(template: T, values: PlaceholderValues): T {
   };
   const result = walk(template) as T;
   if (missing.size) {
-    throw new Error(`The workflow uses placeholders without a value: ${[...missing].map((m) => `{{${m}}}`).join(', ')}`);
+    throw new Error(
+      `The workflow uses placeholders without a value: ${[...missing].map((m) => `{{${m}}}`).join(', ')}`,
+    );
   }
   return result;
 }

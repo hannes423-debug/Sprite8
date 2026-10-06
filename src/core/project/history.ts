@@ -31,7 +31,10 @@ export interface HistoryLimits {
   maxBytes: number;
 }
 
-export const DEFAULT_HISTORY_LIMITS: HistoryLimits = { maxEntries: 200, maxBytes: 192 * 1024 * 1024 };
+export const DEFAULT_HISTORY_LIMITS: HistoryLimits = {
+  maxEntries: 200,
+  maxBytes: 192 * 1024 * 1024,
+};
 
 function collectRasters(doc: DocState, into: Set<RasterImage>): void {
   for (const anim of doc.animations) {
@@ -66,21 +69,33 @@ export function pushHistory(
   return next;
 }
 
-export function undoHistory(history: HistoryState, current: DocState): { history: HistoryState; doc: DocState; label: string } | null {
+export function undoHistory(
+  history: HistoryState,
+  current: DocState,
+): { history: HistoryState; doc: DocState; label: string } | null {
   const entry = history.past[history.past.length - 1];
   if (!entry) return null;
   return {
-    history: { past: history.past.slice(0, -1), future: [{ label: entry.label, doc: current }, ...history.future] },
+    history: {
+      past: history.past.slice(0, -1),
+      future: [{ label: entry.label, doc: current }, ...history.future],
+    },
     doc: entry.doc,
     label: entry.label,
   };
 }
 
-export function redoHistory(history: HistoryState, current: DocState): { history: HistoryState; doc: DocState; label: string } | null {
+export function redoHistory(
+  history: HistoryState,
+  current: DocState,
+): { history: HistoryState; doc: DocState; label: string } | null {
   const entry = history.future[0];
   if (!entry) return null;
   return {
-    history: { past: [...history.past, { label: entry.label, doc: current }], future: history.future.slice(1) },
+    history: {
+      past: [...history.past, { label: entry.label, doc: current }],
+      future: history.future.slice(1),
+    },
     doc: entry.doc,
     label: entry.label,
   };
@@ -96,7 +111,8 @@ export function changedFrames(a: DocState, b: DocState): FrameRef[] {
       const fa = animA?.tracks[d].frames ?? [];
       const n = Math.max(fa.length, fb.length);
       for (let i = 0; i < n; i++) {
-        if (fa[i] !== fb[i]) out.push({ animationId: animB.id, direction: d, frame: Math.min(i, fb.length - 1) });
+        if (fa[i] !== fb[i])
+          out.push({ animationId: animB.id, direction: d, frame: Math.min(i, fb.length - 1) });
       }
     }
   }

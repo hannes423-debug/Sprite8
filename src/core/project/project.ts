@@ -2,7 +2,13 @@ import type { SpriteAnalysis } from '../analysis/analyzeSprite';
 import { createAnimation, getFrame, updateFrameImage, type Animation } from '../animation';
 import type { CharacterModel, SymmetryMode } from '../character/model';
 import { DEFAULT_ORDER, type Direction, type SheetGridSettings } from '../directions';
-import { blitInPlace, createRaster, findFeet, type NormalizedImport, type RasterImage } from '../sprite';
+import {
+  blitInPlace,
+  createRaster,
+  findFeet,
+  type NormalizedImport,
+  type RasterImage,
+} from '../sprite';
 
 /**
  * The shared canvas every direction/frame is edited on. All frames have the
@@ -179,12 +185,15 @@ export function placeOnAnchor(sprite: RasterImage, cell: WorkingCell): Placement
   const dx = Math.round(cell.anchorX - feet.feetX);
   const dy = Math.round(cell.anchorY - feet.groundY);
   blitInPlace(out, sprite, dx, dy, 'replace');
-  const clipped = dx < 0 || dy < 0 || dx + sprite.width > cell.width || dy + sprite.height > cell.height;
+  const clipped =
+    dx < 0 || dy < 0 || dx + sprite.width > cell.width || dy + sprite.height > cell.height;
   return { image: out, clipped };
 }
 
 export function activeAnimation(project: Project): Animation {
-  return project.animations.find((a) => a.id === project.activeAnimationId) ?? project.animations[0];
+  return (
+    project.animations.find((a) => a.id === project.activeAnimationId) ?? project.animations[0]
+  );
 }
 
 export function replaceAnimation(project: Project, anim: Animation): Project {
@@ -192,16 +201,31 @@ export function replaceAnimation(project: Project, anim: Animation): Project {
 }
 
 /** New project state after a source image was imported. */
-export function projectWithSource(project: Project, imported: NormalizedImport, fileName: string): Project {
+export function projectWithSource(
+  project: Project,
+  imported: NormalizedImport,
+  fileName: string,
+): Project {
   const cell = createWorkingCell(imported.sprite.width, imported.sprite.height);
   const anim = createAnimation('idle', 1);
   const placed = placeOnAnchor(imported.sprite, cell);
-  const withSource = updateFrameImage(anim, project.setup.sourceDirection, 0, placed.image, 'source', {
-    kind: 'source',
-    fileName,
-    createdAt: Date.now(),
-  });
-  const baseName = fileName.replace(/\.[a-z0-9]+$/i, '').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'character';
+  const withSource = updateFrameImage(
+    anim,
+    project.setup.sourceDirection,
+    0,
+    placed.image,
+    'source',
+    {
+      kind: 'source',
+      fileName,
+      createdAt: Date.now(),
+    },
+  );
+  const baseName =
+    fileName
+      .replace(/\.[a-z0-9]+$/i, '')
+      .replace(/[^a-zA-Z0-9_-]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'character';
   return {
     ...project,
     updatedAt: Date.now(),
@@ -214,9 +238,17 @@ export function projectWithSource(project: Project, imported: NormalizedImport, 
         originalHeight: imported.original.height,
         pixelScale: imported.pixelScale.scale,
         background:
-          imported.background.kind === 'transparent' ? 'transparent' : imported.removedPixels > 0 ? 'removed' : 'kept',
+          imported.background.kind === 'transparent'
+            ? 'transparent'
+            : imported.removedPixels > 0
+              ? 'removed'
+              : 'kept',
         backgroundColor: imported.background.color
-          ? `#${[imported.background.color.r, imported.background.color.g, imported.background.color.b]
+          ? `#${[
+              imported.background.color.r,
+              imported.background.color.g,
+              imported.background.color.b,
+            ]
               .map((v) => v.toString(16).padStart(2, '0'))
               .join('')}`
           : null,
@@ -230,7 +262,11 @@ export function projectWithSource(project: Project, imported: NormalizedImport, 
     cell,
     animations: [withSource],
     activeAnimationId: withSource.id,
-    sheet: { ...defaultSheetSettings(imported.pixelArt), order: project.sheet.order, grid: project.sheet.grid },
+    sheet: {
+      ...defaultSheetSettings(imported.pixelArt),
+      order: project.sheet.order,
+      grid: project.sheet.grid,
+    },
   };
 }
 
@@ -241,7 +277,8 @@ export function projectWithSource(project: Project, imported: NormalizedImport, 
  */
 export function moveSourceDirection(project: Project, direction: Direction): Project {
   const prev = project.setup.sourceDirection;
-  if (!project.source) return { ...project, setup: { ...project.setup, sourceDirection: direction } };
+  if (!project.source)
+    return { ...project, setup: { ...project.setup, sourceDirection: direction } };
   let anim = activeAnimation(project);
   if (prev !== direction) {
     const old = getFrame(anim, prev, 0);
@@ -253,5 +290,8 @@ export function moveSourceDirection(project: Project, direction: Direction): Pro
     fileName: project.source.fileName,
     createdAt: Date.now(),
   });
-  return replaceAnimation({ ...project, setup: { ...project.setup, sourceDirection: direction } }, anim);
+  return replaceAnimation(
+    { ...project, setup: { ...project.setup, sourceDirection: direction } },
+    anim,
+  );
 }

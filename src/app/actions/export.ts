@@ -16,7 +16,10 @@ export function updateSheet(patch: Partial<SheetSettings>): void {
   });
 }
 
-async function exportWith(selection: ExportSelection, deliver: (bundle: Awaited<ReturnType<typeof buildExport>>) => void): Promise<void> {
+async function exportWith(
+  selection: ExportSelection,
+  deliver: (bundle: Awaited<ReturnType<typeof buildExport>>) => void,
+): Promise<void> {
   const p = getState().project;
   if (!p.source) {
     toast('warn', 'Nothing to export yet — upload a character first.');
@@ -26,7 +29,8 @@ async function exportWith(selection: ExportSelection, deliver: (bundle: Awaited<
   try {
     const bundle = await buildExport(p, browserCodec, selection);
     deliver(bundle);
-    if (bundle.sheet.warnings.length) toast('warn', 'Exported with warnings.', bundle.sheet.warnings.join(' '));
+    if (bundle.sheet.warnings.length)
+      toast('warn', 'Exported with warnings.', bundle.sheet.warnings.join(' '));
   } catch (err) {
     errorToast(err, 'Export failed.');
   } finally {
@@ -53,7 +57,11 @@ export function exportZip(): Promise<void> {
   return exportWith({ sheet: true, cells: true, json: true }, (b) => {
     const name = `${b.names.base}_sprite8.zip`;
     downloadBlob(zipExport(b), name, 'application/zip');
-    toast('success', `Saved ${name}.`, `${b.files.length} files: sheet, ${b.files.length - 2} individual PNGs and JSON metadata.`);
+    toast(
+      'success',
+      `Saved ${name}.`,
+      `${b.files.length} files: sheet, ${b.files.length - 2} individual PNGs and JSON metadata.`,
+    );
   });
 }
 

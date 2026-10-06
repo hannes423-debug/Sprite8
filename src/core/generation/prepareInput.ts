@@ -26,7 +26,10 @@ const BACKGROUNDS: Array<{ color: Rgba; name: string }> = [
 ];
 
 /** Picks the plain background that contrasts most with the character's main colours. */
-export function chooseInputBackground(dominant: Array<{ color: Rgba; share: number }>): { color: Rgba; name: string } {
+export function chooseInputBackground(dominant: Array<{ color: Rgba; share: number }>): {
+  color: Rgba;
+  name: string;
+} {
   const relevant = dominant.filter((d) => d.share >= 0.02).map((d) => d.color);
   let best = BACKGROUNDS[0];
   let bestScore = -1;
@@ -62,7 +65,11 @@ export function prepareProviderInput(
     scaled = scaleNearest(trimmed, trimmed.width * scale, trimmed.height * scale);
   } else {
     scale = (size * fill) / maxSide;
-    scaled = scaleSmooth(trimmed, Math.round(trimmed.width * scale), Math.round(trimmed.height * scale));
+    scaled = scaleSmooth(
+      trimmed,
+      Math.round(trimmed.width * scale),
+      Math.round(trimmed.height * scale),
+    );
   }
   const out = createRaster(size, size, opts.background.color);
   const feet = findFeet(scaled);
@@ -70,5 +77,10 @@ export function prepareProviderInput(
   const bottom = Math.round(size * (1 - (1 - fill) / 2));
   const dy = bottom - scaled.height;
   blitInPlace(out, scaled, dx, dy, 'over');
-  return { image: out, scale, background: opts.background.color, backgroundName: opts.background.name };
+  return {
+    image: out,
+    scale,
+    background: opts.background.color,
+    backgroundName: opts.background.name,
+  };
 }

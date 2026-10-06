@@ -33,7 +33,13 @@ export function App() {
         </div>
       </main>
       {editorOpen ? (
-        <Suspense fallback={<div className="busy-overlay"><span className="spinner" /> Opening editor…</div>}>
+        <Suspense
+          fallback={
+            <div className="busy-overlay">
+              <span className="spinner" /> Opening editor…
+            </div>
+          }
+        >
           <Editor />
         </Suspense>
       ) : null}
@@ -61,7 +67,10 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
       <div className="error-screen card" role="alert">
         <h2>Something went wrong</h2>
         <p className="muted">{this.state.error.message}</p>
-        <p className="small faint">Your work is autosaved in this browser. Reloading usually helps. If the problem persists, reset the project.</p>
+        <p className="small faint">
+          Your work is autosaved in this browser. Reloading usually helps. If the problem persists,
+          reset the project.
+        </p>
         <div className="row">
           <button type="button" className="btn primary" onClick={() => location.reload()}>
             Reload

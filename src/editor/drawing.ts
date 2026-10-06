@@ -1,7 +1,13 @@
 import type { RasterImage, Rect, Rgba } from '../core/sprite';
 
 /** Calls `plot` for every pixel on the line from (x0, y0) to (x1, y1) (Bresenham). */
-export function bresenham(x0: number, y0: number, x1: number, y1: number, plot: (x: number, y: number) => void): void {
+export function bresenham(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  plot: (x: number, y: number) => void,
+): void {
   let x = x0;
   let y = y0;
   const dx = Math.abs(x1 - x0);
@@ -36,7 +42,11 @@ export interface StampOptions {
 
 function writePixel(img: RasterImage, x: number, y: number, o: StampOptions): void {
   if (x < 0 || y < 0 || x >= img.width || y >= img.height) return;
-  if (o.clip && (x < o.clip.x || y < o.clip.y || x >= o.clip.x + o.clip.width || y >= o.clip.y + o.clip.height)) return;
+  if (
+    o.clip &&
+    (x < o.clip.x || y < o.clip.y || x >= o.clip.x + o.clip.width || y >= o.clip.y + o.clip.height)
+  )
+    return;
   const i = (y * img.width + x) * 4;
   if (o.erase || o.color.a === 0) {
     img.data[i] = img.data[i + 1] = img.data[i + 2] = img.data[i + 3] = 0;

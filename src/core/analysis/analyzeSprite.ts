@@ -1,4 +1,9 @@
-import { extentAsymmetry, guessHandedness, type ExtentAsymmetry, type HandednessGuess } from '../asymmetry';
+import {
+  extentAsymmetry,
+  guessHandedness,
+  type ExtentAsymmetry,
+  type HandednessGuess,
+} from '../asymmetry';
 import type { ArtStyle, CameraAngle, CharacterType, ShadingStyle } from '../character/model';
 import type { Direction } from '../directions';
 import {
@@ -55,7 +60,11 @@ export interface AnalyzeOptions {
 
 function estimateShading(palette: PaletteEntry[], uniqueColors: number): Detected<ShadingStyle> {
   if (uniqueColors > 512) {
-    return { value: 'soft', confidence: 0.7, reason: `${uniqueColors} distinct colours suggest smooth, painted shading.` };
+    return {
+      value: 'soft',
+      confidence: 0.7,
+      reason: `${uniqueColors} distinct colours suggest smooth, painted shading.`,
+    };
   }
   const levels = new Map<number, Set<number>>();
   for (const e of palette) {
@@ -66,13 +75,24 @@ function estimateShading(palette: PaletteEntry[], uniqueColors: number): Detecte
     set.add(Math.round(hsl.l / 0.06));
     levels.set(bin, set);
   }
-  if (levels.size === 0) return { value: 'flat', confidence: 0.3, reason: 'Mostly neutral colours.' };
+  if (levels.size === 0)
+    return { value: 'flat', confidence: 0.3, reason: 'Mostly neutral colours.' };
   let total = 0;
   for (const s of levels.values()) total += s.size;
   const avg = total / levels.size;
-  if (avg <= 1.5) return { value: 'flat', confidence: 0.5, reason: `About ${avg.toFixed(1)} shade(s) per hue.` };
-  if (avg <= 4.5) return { value: 'cel', confidence: 0.5, reason: `About ${avg.toFixed(1)} shades per hue (banded shading).` };
-  return { value: 'soft', confidence: 0.5, reason: `About ${avg.toFixed(1)} shades per hue (smooth shading).` };
+  if (avg <= 1.5)
+    return { value: 'flat', confidence: 0.5, reason: `About ${avg.toFixed(1)} shade(s) per hue.` };
+  if (avg <= 4.5)
+    return {
+      value: 'cel',
+      confidence: 0.5,
+      reason: `About ${avg.toFixed(1)} shades per hue (banded shading).`,
+    };
+  return {
+    value: 'soft',
+    confidence: 0.5,
+    reason: `About ${avg.toFixed(1)} shades per hue (smooth shading).`,
+  };
 }
 
 function guessCharacterType(p: ProportionEstimate): Detected<CharacterType> {
@@ -85,7 +105,11 @@ function guessCharacterType(p: ProportionEstimate): Detected<CharacterType> {
     };
   }
   if (aspect < 0.85) {
-    return { value: 'creature', confidence: 0.3, reason: 'Wide silhouette (creature, quadruped or vehicle?).' };
+    return {
+      value: 'creature',
+      confidence: 0.3,
+      reason: 'Wide silhouette (creature, quadruped or vehicle?).',
+    };
   }
   return { value: 'humanoid', confidence: 0.3, reason: 'Upright silhouette; no clear neck found.' };
 }
@@ -108,7 +132,8 @@ export function analyzeSprite(sprite: RasterImage, opts: AnalyzeOptions): Sprite
   }));
   const outline = detectOutline(sprite);
   const shading = estimateShading(palette, uniqueColors);
-  const pixelArtValue = opts.pixelArt ?? (uniqueColors <= 256 && Math.max(sprite.width, sprite.height) <= 256);
+  const pixelArtValue =
+    opts.pixelArt ?? (uniqueColors <= 256 && Math.max(sprite.width, sprite.height) <= 256);
   const pixelArt: Detected<boolean> = {
     value: pixelArtValue,
     confidence: opts.pixelScale && opts.pixelScale > 1 ? 0.95 : pixelArtValue ? 0.7 : 0.6,
@@ -150,21 +175,31 @@ export function analyzeSprite(sprite: RasterImage, opts: AnalyzeOptions): Sprite
 
   let sourceDirectionHint: SpriteAnalysis['sourceDirectionHint'];
   if (rawSymmetry.score >= 0.88 && !oneSided) {
-    sourceDirectionHint = { candidates: ['S', 'N'], reason: 'The image is mirror-symmetric, typical of a front (S) or back (N) view.' };
+    sourceDirectionHint = {
+      candidates: ['S', 'N'],
+      reason: 'The image is mirror-symmetric, typical of a front (S) or back (N) view.',
+    };
   } else if (rawSymmetry.maskScore < 0.6 || oneSided) {
     sourceDirectionHint = {
       candidates: [],
-      reason: 'The silhouette is strongly one-sided: a profile/diagonal view or a character with one-sided equipment.',
+      reason:
+        'The silhouette is strongly one-sided: a profile/diagonal view or a character with one-sided equipment.',
     };
   } else {
-    sourceDirectionHint = { candidates: [], reason: 'The facing direction cannot be measured reliably — please choose it.' };
+    sourceDirectionHint = {
+      candidates: [],
+      reason: 'The facing direction cannot be measured reliably — please choose it.',
+    };
   }
 
   const notes: string[] = [];
   if (opts.sourceDirection !== 'S' && opts.sourceDirection !== 'N') {
-    notes.push('Symmetry was measured on a non-front/back view, so it says little about the character itself.');
+    notes.push(
+      'Symmetry was measured on a non-front/back view, so it says little about the character itself.',
+    );
   }
-  if (!proportions.measured) notes.push('Body landmarks could not be measured; default proportions are used.');
+  if (!proportions.measured)
+    notes.push('Body landmarks could not be measured; default proportions are used.');
 
   return {
     version: 1,
@@ -192,7 +227,8 @@ export function analyzeSprite(sprite: RasterImage, opts: AnalyzeOptions): Sprite
     camera: {
       value: 'elevated',
       confidence: 0,
-      reason: 'Camera elevation cannot be measured from a single sprite — defaulting to elevated 2.5D. Please confirm.',
+      reason:
+        'Camera elevation cannot be measured from a single sprite — defaulting to elevated 2.5D. Please confirm.',
     },
     notes,
   };

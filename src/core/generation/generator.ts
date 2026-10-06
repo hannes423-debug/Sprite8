@@ -51,7 +51,8 @@ export interface GenerateViewArgs {
 /** Why generation cannot start yet (null = ready). */
 export function generationBlocker(project: Project): string | null {
   if (!project.source) return 'Upload a character image first.';
-  if (!project.character) return 'Analyze the character first, so every direction can be generated from the same reference.';
+  if (!project.character)
+    return 'Analyze the character first, so every direction can be generated from the same reference.';
   return null;
 }
 
@@ -75,7 +76,8 @@ function collectViews(anim: Animation, frame: number): ViewSnapshot[] {
   const views: ViewSnapshot[] = [];
   for (const d of DIRECTIONS) {
     const f = anim.tracks[d].frames[frame];
-    if (f?.image && f.status !== 'empty' && f.status !== 'guide') views.push({ direction: d, image: f.image, status: f.status });
+    if (f?.image && f.status !== 'empty' && f.status !== 'guide')
+      views.push({ direction: d, image: f.image, status: f.status });
   }
   return views;
 }
@@ -124,10 +126,20 @@ export async function generateView(args: GenerateViewArgs): Promise<GeneratedVie
   const references =
     provider.capabilities.references && project.generation.includeReferences
       ? views
-          .filter((v) => v.direction !== direction && v.direction !== project.setup.sourceDirection && v.status !== 'mirror')
-          .sort((a, b) => angleBetween(direction, a.direction) - angleBetween(direction, b.direction))
+          .filter(
+            (v) =>
+              v.direction !== direction &&
+              v.direction !== project.setup.sourceDirection &&
+              v.status !== 'mirror',
+          )
+          .sort(
+            (a, b) => angleBetween(direction, a.direction) - angleBetween(direction, b.direction),
+          )
           .slice(0, 4)
-          .map((v) => ({ direction: v.direction, input: prepareProviderInput(v.image, size, { pixelArt, background }) }))
+          .map((v) => ({
+            direction: v.direction,
+            input: prepareProviderInput(v.image, size, { pixelArt, background }),
+          }))
       : [];
   const request = {
     direction,
@@ -147,11 +159,16 @@ export async function generateView(args: GenerateViewArgs): Promise<GeneratedVie
   if (args.mode === 'variation') {
     const current = anim.tracks[direction].frames[frame];
     if (!current?.image || current.status === 'empty' || current.status === 'guide') {
-      throw new GenerationError('There is no view to vary yet — generate, import or draw it first.');
+      throw new GenerationError(
+        'There is no view to vary yet — generate, import or draw it first.',
+      );
     }
     const base = prepareProviderInput(current.image, size, { pixelArt, background });
     generationScale = base.scale;
-    result = await provider.generateVariation({ ...request, base, strength: project.generation.variationStrength }, args.ctx);
+    result = await provider.generateVariation(
+      { ...request, base, strength: project.generation.variationStrength },
+      args.ctx,
+    );
   } else {
     result = await provider.generateDirection(request, args.ctx);
   }
@@ -170,13 +187,18 @@ export async function generateView(args: GenerateViewArgs): Promise<GeneratedVie
     return { direction, frame, image: result.image, status: result.kind, origin, warnings: [] };
   }
   if (!result.image) throw new GenerationError('The provider returned no image.');
-  const outlineColor = character.style.outline.color ? hexToRgba(character.style.outline.color) : null;
+  const outlineColor = character.style.outline.color
+    ? hexToRgba(character.style.outline.color)
+    : null;
   const conformed = conformToCharacter(result.image, {
     cell: project.cell,
     pixelArt,
     locks: character.locks,
     palette: paletteRgba(character.colors.palette),
-    outline: character.style.outline.enabled && outlineColor ? { color: outlineColor, thickness: character.style.outline.thickness } : null,
+    outline:
+      character.style.outline.enabled && outlineColor
+        ? { color: outlineColor, thickness: character.style.outline.thickness }
+        : null,
     referenceHeight: source.sprite.height,
     scaleMode: project.generation.scaleMode,
     generationScale,

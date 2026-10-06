@@ -19,7 +19,14 @@ import { decodePng, encodePng } from './png.mjs';
 const VERSION = '0.1.0';
 
 function parseArgs(argv) {
-  const args = { port: 7861, host: '127.0.0.1', backend: 'echo', delay: 0, mirrorBug: [], outScale: 1 };
+  const args = {
+    port: 7861,
+    host: '127.0.0.1',
+    backend: 'echo',
+    delay: 0,
+    mirrorBug: [],
+    outScale: 1,
+  };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -30,7 +37,9 @@ function parseArgs(argv) {
     else if (a === '--mirror-bug') args.mirrorBug = next().split(',').filter(Boolean);
     else if (a === '--out-scale') args.outScale = Math.max(1, Math.round(Number(next())));
     else if (a === '--help' || a === '-h') {
-      console.log('Usage: server.mjs [--port 7861] [--host 127.0.0.1] [--backend echo|mock] [--delay ms] [--mirror-bug NE,SW] [--out-scale 2]');
+      console.log(
+        'Usage: server.mjs [--port 7861] [--host 127.0.0.1] [--backend echo|mock] [--delay ms] [--mirror-bug NE,SW] [--out-scale 2]',
+      );
       process.exit(0);
     }
   }
@@ -54,7 +63,7 @@ function hexColor(hex) {
 }
 
 function rng(seed) {
-  let s = (seed >>> 0) || 1;
+  let s = seed >>> 0 || 1;
   return () => {
     s = (s * 1664525 + 1013904223) >>> 0;
     return s / 0x100000000;
@@ -70,7 +79,10 @@ function characterBounds(img, bg) {
   for (let y = 0; y < img.height; y++) {
     for (let x = 0; x < img.width; x++) {
       const i = (y * img.width + x) * 4;
-      const d = Math.abs(img.data[i] - bg[0]) + Math.abs(img.data[i + 1] - bg[1]) + Math.abs(img.data[i + 2] - bg[2]);
+      const d =
+        Math.abs(img.data[i] - bg[0]) +
+        Math.abs(img.data[i + 1] - bg[1]) +
+        Math.abs(img.data[i + 2] - bg[2]);
       if (img.data[i + 3] > 0 && d > 30) {
         x0 = Math.min(x0, x);
         y0 = Math.min(y0, y);
@@ -120,10 +132,17 @@ function mockRender(src, body, opts) {
       const v = Math.min(bounds.h - 1, Math.floor((y / dh) * bounds.h));
       if (flip) u = bounds.w - 1 - u;
       const si = ((bounds.y + v) * src.width + bounds.x + u) * 4;
-      const d = Math.abs(src.data[si] - bg[0]) + Math.abs(src.data[si + 1] - bg[1]) + Math.abs(src.data[si + 2] - bg[2]);
+      const d =
+        Math.abs(src.data[si] - bg[0]) +
+        Math.abs(src.data[si + 1] - bg[1]) +
+        Math.abs(src.data[si + 2] - bg[2]);
       if (d <= 30) continue;
       const di = (ty * outW + tx) * 4;
-      for (let c = 0; c < 3; c++) out.data[di + c] = Math.max(0, Math.min(255, src.data[si + c] + Math.round((random() - 0.5) * 10)));
+      for (let c = 0; c < 3; c++)
+        out.data[di + c] = Math.max(
+          0,
+          Math.min(255, src.data[si + c] + Math.round((random() - 0.5) * 10)),
+        );
     }
   }
   return out;
@@ -133,7 +152,10 @@ function mockRender(src, body, opts) {
 
 function send(res, status, body) {
   const json = JSON.stringify(body);
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(json) });
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(json),
+  });
   res.end(json);
 }
 
@@ -190,12 +212,22 @@ export function startServer(options = {}) {
           return;
         }
         if (opts.delay > 0) await new Promise((r) => setTimeout(r, opts.delay));
-        const input = fromBase64(body.mode === 'variation' && body.baseImage ? body.baseImage : body.sourceImage);
+        const input = fromBase64(
+          body.mode === 'variation' && body.baseImage ? body.baseImage : body.sourceImage,
+        );
         if (opts.backend === 'mock') {
           const img = mockRender(input, body, opts);
-          send(res, 200, { image: toBase64(img), seed: body.seed, notes: [`mock backend: fake ${body.direction} render (not AI)`] });
+          send(res, 200, {
+            image: toBase64(img),
+            seed: body.seed,
+            notes: [`mock backend: fake ${body.direction} render (not AI)`],
+          });
         } else {
-          send(res, 200, { image: toBase64(input), seed: body.seed, notes: ['echo backend: returned the input unchanged'] });
+          send(res, 200, {
+            image: toBase64(input),
+            seed: body.seed,
+            notes: ['echo backend: returned the input unchanged'],
+          });
         }
         return;
       }
@@ -203,7 +235,9 @@ export function startServer(options = {}) {
         const body = JSON.parse(await readBody(req));
         const img = fromBase64(body.image ?? '');
         send(res, 200, {
-          notes: [`${opts.backend} backend received a ${img.width}×${img.height} sprite; plug a vision model in here to describe it.`],
+          notes: [
+            `${opts.backend} backend received a ${img.width}×${img.height} sprite; plug a vision model in here to describe it.`,
+          ],
         });
         return;
       }
@@ -220,7 +254,10 @@ export function startServer(options = {}) {
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('server.mjs')) {
   const args = parseArgs(process.argv);
   startServer(args).then(() => {
-    console.log(`Sprite8 reference server (${args.backend}) listening on http://${args.host}:${args.port}`);
-    if (args.backend === 'mock') console.log('NOTE: the mock backend is a test double, not an AI model.');
+    console.log(
+      `Sprite8 reference server (${args.backend}) listening on http://${args.host}:${args.port}`,
+    );
+    if (args.backend === 'mock')
+      console.log('NOTE: the mock backend is a test double, not an AI model.');
   });
 }

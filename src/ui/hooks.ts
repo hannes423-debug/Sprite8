@@ -33,7 +33,11 @@ export function silhouetteOf(opposite: RasterImage, anchorX: number): RasterImag
 }
 
 /** The outline guide for a direction that has no pixels yet, if the opposite view exists. */
-export function silhouetteGuideFor(project: Project, direction: Direction, frame: number): RasterImage | null {
+export function silhouetteGuideFor(
+  project: Project,
+  direction: Direction,
+  frame: number,
+): RasterImage | null {
   const anim = activeAnimation(project);
   const own = getFrame(anim, direction, frame);
   if (own?.image && own.status !== 'guide' && own.status !== 'empty') return null;
@@ -42,7 +46,12 @@ export function silhouetteGuideFor(project: Project, direction: Direction, frame
   return silhouetteOf(opp.image, project.cell.anchorX);
 }
 
-export function guideSpec(project: Project, direction: Direction, compact: boolean, opts: { proportions: boolean; sideMarkers: boolean }): GuideSpec {
+export function guideSpec(
+  project: Project,
+  direction: Direction,
+  compact: boolean,
+  opts: { proportions: boolean; sideMarkers: boolean },
+): GuideSpec {
   const character = project.character;
   return {
     cell: project.cell,
@@ -50,7 +59,8 @@ export function guideSpec(project: Project, direction: Direction, compact: boole
     proportions: character?.proportions ?? null,
     referenceHeight: project.source?.sprite.height ?? null,
     showProportions: opts.proportions && !!character,
-    showSideMarkers: opts.sideMarkers && !!project.source && project.setup.symmetry === 'asymmetric',
+    showSideMarkers:
+      opts.sideMarkers && !!project.source && project.setup.symmetry === 'asymmetric',
     compact,
   };
 }

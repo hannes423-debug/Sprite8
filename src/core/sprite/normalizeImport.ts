@@ -54,7 +54,10 @@ export function looksLikePixelArt(img: RasterImage, upscale: number): boolean {
  * Turns an arbitrary uploaded image into a clean source sprite:
  * pixel-scale detection → background keying → trim → size cap.
  */
-export function normalizeImport(input: RasterImage, opts: NormalizeImportOptions = {}): NormalizedImport {
+export function normalizeImport(
+  input: RasterImage,
+  opts: NormalizeImportOptions = {},
+): NormalizedImport {
   const warnings: string[] = [];
   const pixelScale =
     opts.detectPixelScale === false || opts.pixelArt === false
@@ -68,7 +71,10 @@ export function normalizeImport(input: RasterImage, opts: NormalizeImportOptions
     );
   }
   // Decide pixel-art handling before keying so painted art gets soft edges.
-  let pixelArt = opts.pixelArt === 'auto' || opts.pixelArt === undefined ? looksLikePixelArt(img, pixelScale.scale) : opts.pixelArt;
+  let pixelArt =
+    opts.pixelArt === 'auto' || opts.pixelArt === undefined
+      ? looksLikePixelArt(img, pixelScale.scale)
+      : opts.pixelArt;
   const bg = removeBackground(img, {
     mode: opts.backgroundMode ?? 'auto',
     tolerance: opts.tolerance ?? 32,
@@ -109,7 +115,9 @@ export function normalizeImport(input: RasterImage, opts: NormalizeImportOptions
     downscaledBy = Math.max(sprite.width, sprite.height) / maxDim;
     const w = Math.max(1, Math.round(sprite.width / downscaledBy));
     const h = Math.max(1, Math.round(sprite.height / downscaledBy));
-    warnings.push(`Large image downscaled from ${sprite.width}×${sprite.height} to ${w}×${h} for editing.`);
+    warnings.push(
+      `Large image downscaled from ${sprite.width}×${sprite.height} to ${w}×${h} for editing.`,
+    );
     sprite = scaleForStyle(sprite, w, h, pixelArt);
   }
   return {

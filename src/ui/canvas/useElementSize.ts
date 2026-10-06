@@ -7,7 +7,12 @@ export function useElementSize<T extends HTMLElement>() {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const update = () => setSize((s) => (s.w === el.clientWidth && s.h === el.clientHeight ? s : { w: el.clientWidth, h: el.clientHeight }));
+    const update = () =>
+      setSize((s) =>
+        s.w === el.clientWidth && s.h === el.clientHeight
+          ? s
+          : { w: el.clientWidth, h: el.clientHeight },
+      );
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);

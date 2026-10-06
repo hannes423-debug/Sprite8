@@ -56,7 +56,8 @@ export function guessHandedness(sprite: RasterImage, sourceDirection: Direction)
     return {
       handedness: null,
       confidence: 0,
-      reason: 'Profile views hide one side of the body, so the dominant hand cannot be measured. Please set it manually.',
+      reason:
+        'Profile views hide one side of the body, so the dominant hand cannot be measured. Please set it manually.',
     };
   }
   if (Math.abs(ext.ratio) < 0.2) {
@@ -94,7 +95,8 @@ export function checkHandedness(args: {
   const src = extentAsymmetry(args.source);
   const tgt = extentAsymmetry(args.target);
   if (!src || !tgt) return { status: 'skipped', message: 'Nothing to compare yet.' };
-  if (args.sourceDirection === args.targetDirection) return { status: 'skipped', message: 'Source view.' };
+  if (args.sourceDirection === args.targetDirection)
+    return { status: 'skipped', message: 'Source view.' };
   const srcRight = sidePlacement(args.sourceDirection, 'right').screenX;
   if (Math.abs(srcRight) < 0.5 || Math.abs(src.ratio) < 0.25) {
     return { status: 'skipped', message: 'The source has no measurable one-sided equipment.' };
@@ -102,14 +104,20 @@ export function checkHandedness(args: {
   const side: BodySide = Math.sign(src.ratio) === Math.sign(srcRight) ? 'right' : 'left';
   const expected = sidePlacement(args.targetDirection, side).screenX;
   if (Math.abs(expected) < 0.5) {
-    return { status: 'skipped', message: 'Profile view: equipment overlaps the body, nothing to measure.' };
+    return {
+      status: 'skipped',
+      message: 'Profile view: equipment overlaps the body, nothing to measure.',
+    };
   }
   if (Math.abs(tgt.ratio) < 0.15) {
     return { status: 'skipped', message: 'The generated silhouette is too balanced to judge.' };
   }
   const expectedWord = expected > 0 ? 'screen-right' : 'screen-left';
   if (Math.sign(tgt.ratio) === Math.sign(expected)) {
-    return { status: 'ok', message: `${side === 'right' ? 'Right' : 'Left'}-side equipment reaches ${expectedWord} as expected.` };
+    return {
+      status: 'ok',
+      message: `${side === 'right' ? 'Right' : 'Left'}-side equipment reaches ${expectedWord} as expected.`,
+    };
   }
   return {
     status: 'warning',

@@ -36,7 +36,8 @@ const CAMERA_TAGS: Record<CameraAngle, string> = {
 };
 
 const STYLE_TAGS: Record<ArtStyle, string> = {
-  'pixel-art': 'pixel art game sprite, crisp hard-edged pixels, limited color palette, no anti-aliasing',
+  'pixel-art':
+    'pixel art game sprite, crisp hard-edged pixels, limited color palette, no anti-aliasing',
   painted: 'hand-painted 2D game character sprite',
   'hand-drawn': 'hand-drawn 2D game character, clean line art',
   cartoon: 'cartoon 2D game character sprite, flat colors, bold outlines',
@@ -71,7 +72,11 @@ export interface PromptOptions {
  * reference. Every direction shares the same description, colours, style and
  * side rules — only the view phrase and the side placements change.
  */
-export function buildDirectionPrompt(ref: CharacterReference, direction: Direction, opts: PromptOptions): DirectionPrompt {
+export function buildDirectionPrompt(
+  ref: CharacterReference,
+  direction: Direction,
+  opts: PromptOptions,
+): DirectionPrompt {
   const info = directionInfo(direction);
   const bgName = opts.backgroundName ?? 'white';
   const colorNames = [...new Set(ref.colors.dominant.map((d) => d.name))].slice(0, 5);
@@ -104,7 +109,8 @@ export function buildDirectionPrompt(ref: CharacterReference, direction: Directi
     `plain ${bgName} background, centered, single character`,
     opts.extraPrompt,
   ]);
-  const otherHand = ref.handedness === 'right' ? 'left-handed' : ref.handedness === 'left' ? 'right-handed' : null;
+  const otherHand =
+    ref.handedness === 'right' ? 'left-handed' : ref.handedness === 'left' ? 'right-handed' : null;
   const negative = join([
     'multiple characters, duplicate, cropped, cut off feet, extra limbs, extra fingers',
     'different outfit, different colors, different proportions',
@@ -121,7 +127,9 @@ export function buildDirectionPrompt(ref: CharacterReference, direction: Directi
     styleSentence,
     `Camera: ${CAMERA_TAGS[ref.camera]}. Show the full body standing on the ground, centred on a plain ${bgName} background.`,
     ...sideRules,
-    asymmetric ? 'Do not mirror or flip the character: every item stays on the same side of the body as in the reference.' : null,
+    asymmetric
+      ? 'Do not mirror or flip the character: every item stays on the same side of the body as in the reference.'
+      : null,
     opts.extraPrompt ? opts.extraPrompt : null,
   ].filter((l): l is string => !!l);
   const instruction = instructionLines.join('\n');

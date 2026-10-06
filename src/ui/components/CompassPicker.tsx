@@ -1,7 +1,12 @@
 import { DIRECTIONS, directionInfo, type Direction } from '../../core/directions';
 
 /** 3×3 compass of direction buttons (N at the top, S at the bottom). */
-export function CompassPicker(props: { value: Direction; onChange: (d: Direction) => void; label: string; testIdPrefix?: string }) {
+export function CompassPicker(props: {
+  value: Direction;
+  onChange: (d: Direction) => void;
+  label: string;
+  testIdPrefix?: string;
+}) {
   const cells: Array<Direction | null> = Array(9).fill(null);
   for (const d of DIRECTIONS) {
     const { col, row } = directionInfo(d).compass;

@@ -1,5 +1,12 @@
 import { useState, type DragEvent } from 'react';
-import { analyze, chooseSourceFile, importSourceFile, loadExample, setSourceDirection, setSymmetry } from '../../app/actions/project';
+import {
+  analyze,
+  chooseSourceFile,
+  importSourceFile,
+  loadExample,
+  setSourceDirection,
+  setSymmetry,
+} from '../../app/actions/project';
 import { importDirectionFiles } from '../../app/actions/frames';
 import { useAppState } from '../../app/store';
 import { directionInfo } from '../../core/directions';
@@ -32,7 +39,12 @@ export function SourcePanel() {
         <h2 id="source-title">Source</h2>
         {source ? (
           <div className="card-actions">
-            <Button size="small" icon="upload" onClick={() => void chooseSourceFile()} testId="replace-source">
+            <Button
+              size="small"
+              icon="upload"
+              onClick={() => void chooseSourceFile()}
+              testId="replace-source"
+            >
               Replace
             </Button>
           </div>
@@ -93,17 +105,30 @@ export function SourcePanel() {
           <span className="tag" title={source.fileName}>
             <Icon name="image" size={12} /> {source.sprite.width}×{source.sprite.height}px
           </span>
-          {source.import.pixelScale > 1 ? <span className="tag">upscaled {source.import.pixelScale}× → native</span> : null}
+          {source.import.pixelScale > 1 ? (
+            <span className="tag">upscaled {source.import.pixelScale}× → native</span>
+          ) : null}
           <span className="tag">{source.import.pixelArt ? 'pixel art' : 'high-res art'}</span>
-          {source.import.background === 'removed' ? <span className="tag">background removed</span> : null}
-          {source.import.background === 'kept' ? <span className="tag" style={{ color: 'var(--warn)' }}>no transparency</span> : null}
+          {source.import.background === 'removed' ? (
+            <span className="tag">background removed</span>
+          ) : null}
+          {source.import.background === 'kept' ? (
+            <span className="tag" style={{ color: 'var(--warn)' }}>
+              no transparency
+            </span>
+          ) : null}
         </div>
       ) : (
         <div className="card-sub">
           <h3>Or try an example</h3>
           <div className="examples">
             {EXAMPLES.map((ex) => (
-              <Button key={ex.id} size="small" onClick={() => void loadExample(ex.url, ex.fileName, ex.hints)} testId={`example-${ex.id}`}>
+              <Button
+                key={ex.id}
+                size="small"
+                onClick={() => void loadExample(ex.url, ex.fileName, ex.hints)}
+                testId={`example-${ex.id}`}
+              >
                 {ex.label}
               </Button>
             ))}
@@ -119,8 +144,18 @@ export function SourcePanel() {
           value={setup.symmetry}
           onChange={(m) => void setSymmetry(m)}
           options={[
-            { value: 'symmetric', label: 'Symmetric', testId: 'symmetry-symmetric', title: 'Left and right side look the same (generic NPC, robot, basic knight)' },
-            { value: 'asymmetric', label: 'Asymmetric', testId: 'symmetry-asymmetric', title: 'Sides differ (weapon hand, hockey stick, one shoulder pad, scars)' },
+            {
+              value: 'symmetric',
+              label: 'Symmetric',
+              testId: 'symmetry-symmetric',
+              title: 'Left and right side look the same (generic NPC, robot, basic knight)',
+            },
+            {
+              value: 'asymmetric',
+              label: 'Asymmetric',
+              testId: 'symmetry-asymmetric',
+              title: 'Sides differ (weapon hand, hockey stick, one shoulder pad, scars)',
+            },
           ]}
         />
         <p className="small muted">
@@ -132,9 +167,16 @@ export function SourcePanel() {
 
       <div className="card-sub">
         <h3>3 · Source direction</h3>
-        <CompassPicker label="Source direction" value={setup.sourceDirection} onChange={(d) => void setSourceDirection(d)} testIdPrefix="source-dir" />
+        <CompassPicker
+          label="Source direction"
+          value={setup.sourceDirection}
+          onChange={(d) => void setSourceDirection(d)}
+          testIdPrefix="source-dir"
+        />
         <p className="small muted" style={{ textAlign: 'center' }}>
-          The uploaded image shows the character facing <strong>{directionInfo(setup.sourceDirection).name}</strong> ({directionInfo(setup.sourceDirection).view}).
+          The uploaded image shows the character facing{' '}
+          <strong>{directionInfo(setup.sourceDirection).name}</strong> (
+          {directionInfo(setup.sourceDirection).view}).
         </p>
       </div>
 
@@ -150,7 +192,10 @@ export function SourcePanel() {
         {analyzed ? '4 · Re-analyze character' : '4 · Analyze character'}
       </Button>
       {source?.import.background === 'kept' ? (
-        <Notice kind="warn">This image has no transparent or uniform background. The background stays part of the sprite; a transparent PNG gives much better results.</Notice>
+        <Notice kind="warn">
+          This image has no transparent or uniform background. The background stays part of the
+          sprite; a transparent PNG gives much better results.
+        </Notice>
       ) : null}
     </section>
   );

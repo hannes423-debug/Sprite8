@@ -178,7 +178,8 @@ export function pickContrastingBackground(avoid: Rgba[]): Rgba {
   let bestScore = -1;
   for (const cand of candidates) {
     let minD = Infinity;
-    for (const c of avoid) minD = Math.min(minD, Math.hypot(cand.r - c.r, cand.g - c.g, cand.b - c.b));
+    for (const c of avoid)
+      minD = Math.min(minD, Math.hypot(cand.r - c.r, cand.g - c.g, cand.b - c.b));
     if (minD > bestScore) {
       bestScore = minD;
       best = cand;

@@ -41,7 +41,8 @@ export function createZip(entries: ZipEntry[]): Uint8Array {
   const seen = new Set<string>();
   for (const entry of entries) {
     const name = entry.name.replace(/\\/g, '/').replace(/^\/+/, '');
-    if (!name || seen.has(name)) throw new Error(`Invalid or duplicate zip entry name: "${entry.name}"`);
+    if (!name || seen.has(name))
+      throw new Error(`Invalid or duplicate zip entry name: "${entry.name}"`);
     seen.add(name);
     const nameBytes = encoder.encode(name);
     const crc = crc32(entry.data);

@@ -12,7 +12,8 @@ import type { RasterImage } from '../sprite';
  * but every module (generation, editor, exporter, storage) already works on
  * (animation, direction, frame) so walk cycles etc. slot in without changes.
  */
-export type AnimationKind = 'idle' | 'walk' | 'run' | 'attack' | 'skate' | 'hurt' | 'death' | 'custom';
+export type AnimationKind =
+  'idle' | 'walk' | 'run' | 'attack' | 'skate' | 'hurt' | 'death' | 'custom';
 
 export const ANIMATION_KIND_LABELS: Record<AnimationKind, string> = {
   idle: 'Idle',

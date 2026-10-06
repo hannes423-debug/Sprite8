@@ -1,7 +1,22 @@
 import { analyzeSprite } from '../../core/analysis';
-import { activeAnimation, createEmptyProject, EMPTY_HISTORY, moveSourceDirection, projectWithSource, replaceAnimation, type Project } from '../../core/project';
+import {
+  activeAnimation,
+  createEmptyProject,
+  EMPTY_HISTORY,
+  moveSourceDirection,
+  projectWithSource,
+  replaceAnimation,
+  type Project,
+} from '../../core/project';
 import { updateFrameImage } from '../../core/animation';
-import { characterReference, createCharacterModel, createFeature, type CharacterFeature, type CharacterModel, type SymmetryMode } from '../../core/character';
+import {
+  characterReference,
+  createCharacterModel,
+  createFeature,
+  type CharacterFeature,
+  type CharacterModel,
+  type SymmetryMode,
+} from '../../core/character';
 import { DIRECTIONS, type Direction } from '../../core/directions';
 import { getProvider, resolveProviderSettings } from '../../core/providers';
 import { normalizeImport, type RasterImage } from '../../core/sprite';
@@ -25,16 +40,23 @@ const pendingHints = new Map<string, ExampleHints>();
 
 function hasManualWork(p: Project): boolean {
   const anim = activeAnimation(p);
-  return DIRECTIONS.some((d) => anim.tracks[d].frames.some((f) => f.image && f.status !== 'source' && f.status !== 'guide'));
+  return DIRECTIONS.some((d) =>
+    anim.tracks[d].frames.some((f) => f.image && f.status !== 'source' && f.status !== 'guide'),
+  );
 }
 
 /** Replaces the project with a new character built from `raster`. */
-export async function importSourceRaster(raster: RasterImage, fileName: string, hints?: ExampleHints): Promise<boolean> {
+export async function importSourceRaster(
+  raster: RasterImage,
+  fileName: string,
+  hints?: ExampleHints,
+): Promise<boolean> {
   const current = getState().project;
   if (hasManualWork(current)) {
     const choice = await confirmDialog({
       title: 'Start a new character?',
-      message: 'Loading a new source image replaces all eight directions of the current character. Save a project file first if you want to keep it.',
+      message:
+        'Loading a new source image replaces all eight directions of the current character. Save a project file first if you want to keep it.',
       confirmLabel: 'Replace character',
       danger: true,
     });
@@ -42,13 +64,21 @@ export async function importSourceRaster(raster: RasterImage, fileName: string, 
   }
   const imported = normalizeImport(raster, { maxDimension: 512 });
   if (imported.sprite.width === 0 || imported.warnings.some((w) => w.includes('empty'))) {
-    toast('error', 'No character found in this image.', 'The image seems to be empty after removing its background.');
+    toast(
+      'error',
+      'No character found in this image.',
+      'The image seems to be empty after removing its background.',
+    );
     return false;
   }
   const base = createEmptyProject();
   const setup = hints
     ? { name: hints.name, symmetry: hints.symmetry, sourceDirection: hints.sourceDirection }
-    : { ...base.setup, symmetry: current.setup.symmetry, sourceDirection: current.setup.sourceDirection };
+    : {
+        ...base.setup,
+        symmetry: current.setup.symmetry,
+        sourceDirection: current.setup.sourceDirection,
+      };
   let project = projectWithSource({ ...base, setup }, imported, fileName);
   if (hints) {
     project = { ...project, setup: { ...project.setup, name: hints.name } };
@@ -61,7 +91,11 @@ export async function importSourceRaster(raster: RasterImage, fileName: string, 
     ui: { ...s.ui, selected: project.setup.sourceDirection, frame: 0, jobs: {}, editorOpen: false },
   }));
   const info = imported.warnings.filter((w) => !w.startsWith('Removed a solid'));
-  toast('success', `Loaded ${fileName} (${imported.sprite.width}×${imported.sprite.height}${imported.pixelArt ? ', pixel art' : ''}).`, info.join(' ') || undefined);
+  toast(
+    'success',
+    `Loaded ${fileName} (${imported.sprite.width}×${imported.sprite.height}${imported.pixelArt ? ', pixel art' : ''}).`,
+    info.join(' ') || undefined,
+  );
   return true;
 }
 
@@ -82,7 +116,11 @@ export async function chooseSourceFile(): Promise<void> {
   if (file) await importSourceFile(file);
 }
 
-export async function loadExample(url: string, fileName: string, hints: ExampleHints): Promise<void> {
+export async function loadExample(
+  url: string,
+  fileName: string,
+  hints: ExampleHints,
+): Promise<void> {
   setUi({ busy: 'Loading example…' });
   try {
     const res = await fetch(url);
@@ -101,7 +139,9 @@ export async function setSymmetry(mode: SymmetryMode): Promise<void> {
   updateProject((pr) => ({ ...pr, setup: { ...pr.setup, symmetry: mode } }));
   if (mode === 'asymmetric') {
     const anim = activeAnimation(p);
-    const mirrored = DIRECTIONS.filter((d) => anim.tracks[d].frames.some((f) => f.status === 'mirror'));
+    const mirrored = DIRECTIONS.filter((d) =>
+      anim.tracks[d].frames.some((f) => f.status === 'mirror'),
+    );
     if (mirrored.length) {
       const choice = await confirmDialog({
         title: 'Remove mirrored views?',
@@ -155,7 +195,11 @@ export function refreshAnalysis(): void {
     pixelArt: p.source.import.pixelArt,
     pixelScale: p.source.import.pixelScale,
   });
-  updateProject((pr) => ({ ...pr, analysis, character: createCharacterModel(pr.source!.sprite, analysis, pr.character) }));
+  updateProject((pr) => ({
+    ...pr,
+    analysis,
+    character: createCharacterModel(pr.source!.sprite, analysis, pr.character),
+  }));
 }
 
 export async function analyze(): Promise<void> {
@@ -177,7 +221,9 @@ export async function analyze(): Promise<void> {
       model = {
         ...model,
         description: hints.description,
-        handedness: hints.features.some((f) => f.side === 'right' && f.attachment === 'hand') ? 'right' : model.handedness,
+        handedness: hints.features.some((f) => f.side === 'right' && f.attachment === 'hand')
+          ? 'right'
+          : model.handedness,
         features: hints.features.map((f) => createFeature(f)),
       };
       pendingHints.delete(p.id);
@@ -200,10 +246,13 @@ export async function analyze(): Promise<void> {
         if (extra.description && !hints) model = { ...model, description: extra.description };
         if (extra.type) model = { ...model, type: extra.type };
         if (extra.handedness) model = { ...model, handedness: extra.handedness };
-        if (extra.features?.length && model.features.length === 0) model = { ...model, features: extra.features.map((f) => createFeature(f)) };
+        if (extra.features?.length && model.features.length === 0)
+          model = { ...model, features: extra.features.map((f) => createFeature(f)) };
         notes.push(...(extra.notes ?? []));
       } catch {
-        notes.push(`${provider.label} could not describe the character; using the measured analysis only.`);
+        notes.push(
+          `${provider.label} could not describe the character; using the measured analysis only.`,
+        );
       } finally {
         setUi({ busy: null });
       }
@@ -215,7 +264,11 @@ export async function analyze(): Promise<void> {
       `symmetry: ${analysis.symmetry.verdict}`,
       analysis.handedness.handedness ? `${analysis.handedness.handedness}-handed (guess)` : null,
     ].filter(Boolean);
-    toast('success', 'Analysis complete — review and correct it before generating.', [parts.join(' · '), ...notes].join(' '));
+    toast(
+      'success',
+      'Analysis complete — review and correct it before generating.',
+      [parts.join(' · '), ...notes].join(' '),
+    );
   } catch (err) {
     errorToast(err, 'Analysis failed.');
   } finally {
@@ -232,7 +285,8 @@ export async function newProject(): Promise<void> {
   if (p.source) {
     const choice = await confirmDialog({
       title: 'Start a new project?',
-      message: 'The current character will be removed from this browser. Save a project file first if you want to keep it.',
+      message:
+        'The current character will be removed from this browser. Save a project file first if you want to keep it.',
       confirmLabel: 'New project',
       danger: true,
     });
@@ -257,8 +311,15 @@ export async function saveProjectFile(): Promise<void> {
   setUi({ busy: 'Saving project…' });
   try {
     const text = await serializeProject(p, browserCodec);
-    downloadBlob(new Blob([text], { type: 'application/json' }), `${p.setup.name || 'character'}.sprite8.json`);
-    toast('success', 'Project file saved.', 'Open it later with "Open project" to continue editing.');
+    downloadBlob(
+      new Blob([text], { type: 'application/json' }),
+      `${p.setup.name || 'character'}.sprite8.json`,
+    );
+    toast(
+      'success',
+      'Project file saved.',
+      'Open it later with "Open project" to continue editing.',
+    );
   } catch (err) {
     errorToast(err, 'Could not save the project.');
   } finally {
@@ -285,7 +346,13 @@ export async function openProjectFile(file?: File): Promise<void> {
       ...s,
       project,
       history: EMPTY_HISTORY,
-      ui: { ...s.ui, selected: project.setup.sourceDirection, frame: 0, jobs: {}, editorOpen: false },
+      ui: {
+        ...s.ui,
+        selected: project.setup.sourceDirection,
+        frame: 0,
+        jobs: {},
+        editorOpen: false,
+      },
     }));
     toast('success', `Opened ${chosen.name}.`);
   } catch (err) {

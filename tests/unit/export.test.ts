@@ -2,8 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { decodePng } from '../../models/reference-server/png.mjs';
 import { insertFrame, updateFrameImage } from '../../src/core/animation';
 import { DIRECTIONS } from '../../src/core/directions';
-import { buildExport, buildMetadata, buildSheet, crc32, createZip, exportNames, slugify, zipExport } from '../../src/core/export';
-import { activeAnimation, createEmptyProject, placeOnAnchor, projectWithSource, replaceAnimation, type Project } from '../../src/core/project';
+import {
+  buildExport,
+  buildMetadata,
+  buildSheet,
+  crc32,
+  createZip,
+  exportNames,
+  slugify,
+  zipExport,
+} from '../../src/core/export';
+import {
+  activeAnimation,
+  createEmptyProject,
+  placeOnAnchor,
+  projectWithSource,
+  replaceAnimation,
+  type Project,
+} from '../../src/core/project';
 import { contentBounds, flipHorizontal, getPixel, normalizeImport } from '../../src/core/sprite';
 import { C, humanoid, nodeCodec, outlined } from './helpers';
 
@@ -64,7 +80,10 @@ describe('sprite sheet layout', () => {
 
   it('64 px target with pixel preservation uses an integer scale and the documented anchor', () => {
     const p = projectWithAllDirections();
-    const sheet = buildSheet({ ...p, sheet: { ...p.sheet, target: '64', pixelPreservation: true } });
+    const sheet = buildSheet({
+      ...p,
+      sheet: { ...p.sheet, target: '64', pixelPreservation: true },
+    });
     expect([sheet.cellWidth, sheet.cellHeight]).toEqual([64, 64]);
     expect(sheet.anchor).toEqual({ x: 32, y: 60 });
     expect(Number.isInteger(sheet.scale)).toBe(true);
@@ -84,7 +103,16 @@ describe('sprite sheet layout', () => {
     const s42 = buildSheet({ ...p, sheet: { ...p.sheet, grid: '4x2', target: '48', spacing: 2 } });
     expect([s42.columns, s42.rows]).toEqual([4, 2]);
     expect(s42.image.width).toBe(4 * 48 + 3 * 2);
-    const compass = buildSheet({ ...p, sheet: { ...p.sheet, grid: 'compass', target: '32', background: 'color', backgroundColor: '#102030' } });
+    const compass = buildSheet({
+      ...p,
+      sheet: {
+        ...p.sheet,
+        grid: 'compass',
+        target: '32',
+        background: 'color',
+        backgroundColor: '#102030',
+      },
+    });
     expect([compass.image.width, compass.image.height]).toEqual([96, 96]);
     expect(getPixel(compass.image, 48, 48)).toEqual({ r: 16, g: 32, b: 48, a: 255 }); // empty centre cell is background
     const x2 = buildSheet({ ...p, sheet: { ...p.sheet, target: '64', exportScale: 2 } });
@@ -127,7 +155,13 @@ describe('metadata', () => {
     expect(meta.cellHeight).toBe(64);
     expect(meta.anchor).toEqual({ x: 32, y: 60 });
     expect(meta.sheet.order).toEqual([...DIRECTIONS]);
-    expect(meta.animation.frames.E[0]).toEqual({ x: 128, y: 0, w: 64, h: 64, file: 'Hockey_Player_E.png' });
+    expect(meta.animation.frames.E[0]).toEqual({
+      x: 128,
+      y: 0,
+      w: 64,
+      h: 64,
+      file: 'Hockey_Player_E.png',
+    });
     expect(meta.symmetry).toBe('asymmetric');
   });
 
@@ -159,7 +193,11 @@ describe('zip writer', () => {
 
   it('exports sheet, individual PNGs and JSON in one archive', async () => {
     const p = projectWithAllDirections();
-    const bundle = await buildExport({ ...p, sheet: { ...p.sheet, target: '64' } }, nodeCodec, { sheet: true, cells: true, json: true });
+    const bundle = await buildExport({ ...p, sheet: { ...p.sheet, target: '64' } }, nodeCodec, {
+      sheet: true,
+      cells: true,
+      json: true,
+    });
     const entries = readZip(zipExport(bundle));
     expect(entries.map((e) => e.name)).toEqual([
       'Hockey_Player_sheet.png',

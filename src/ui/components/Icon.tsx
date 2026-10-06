@@ -1,7 +1,8 @@
 /** Small stroke icon set drawn for Sprite8 (24×24 grid, 2px strokes). */
 const PATHS = {
   upload: 'M12 15V4M7 9l5-5 5 5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4',
-  sparkles: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z',
+  sparkles:
+    'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z',
   refresh: 'M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5',
   shuffle: 'M4 7h4l8 10h4M4 17h4l2-2.5M14 9.5L16 7h4M18 5l2 2-2 2M18 15l2 2-2 2',
   pencil: 'M4 20l1-4L16 5l3 3L8 19zM14 7l3 3',
@@ -25,7 +26,8 @@ const PATHS = {
   crop: 'M6 2v16h16M2 6h16v16',
   scale: 'M4 14v6h6M20 10V4h-6M4 20l7-7M20 4l-7 7',
   copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
-  scissors: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12',
+  scissors:
+    'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12',
   paste: 'M9 3h6v3H9zM7 4H5v17h14V4h-2',
   trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   lock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
@@ -66,7 +68,17 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
-export function Icon({ name, size = 18, title, className }: { name: IconName; size?: number; title?: string; className?: string }) {
+export function Icon({
+  name,
+  size = 18,
+  title,
+  className,
+}: {
+  name: IconName;
+  size?: number;
+  title?: string;
+  className?: string;
+}) {
   return (
     <svg
       className={`icon${className ? ` ${className}` : ''}`}

@@ -37,7 +37,14 @@ import {
 } from '../../src/core/sprite';
 import { C, fromAscii, humanoid, opaqueColors, outlined, rng } from './helpers';
 
-const P: Record<string, Rgba> = { R: C.red, B: C.blue, K: C.outline, W: C.white, G: { r: 0, g: 255, b: 0, a: 255 }, M: { r: 255, g: 0, b: 255, a: 255 } };
+const P: Record<string, Rgba> = {
+  R: C.red,
+  B: C.blue,
+  K: C.outline,
+  W: C.white,
+  G: { r: 0, g: 255, b: 0, a: 255 },
+  M: { r: 255, g: 0, b: 255, a: 255 },
+};
 
 describe('colour helpers', () => {
   it('round-trips hex', () => {
@@ -236,7 +243,12 @@ describe('palettes', () => {
   it('median cut reduces many colours', () => {
     const r = rng(1);
     const entries = Array.from({ length: 300 }, () => ({
-      color: { r: Math.floor(r() * 256), g: Math.floor(r() * 256), b: Math.floor(r() * 256), a: 255 },
+      color: {
+        r: Math.floor(r() * 256),
+        g: Math.floor(r() * 256),
+        b: Math.floor(r() * 256),
+        a: 255,
+      },
       count: 1 + Math.floor(r() * 10),
     }));
     expect(medianCut(entries, 12).length).toBe(12);

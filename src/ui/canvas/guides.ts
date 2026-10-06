@@ -43,10 +43,22 @@ export function drawGuides(ctx: CanvasRenderingContext2D, v: View, g: GuideSpec)
   ctx.lineWidth = 1;
   // Ground line + anchor.
   ctx.strokeStyle = 'rgba(124,156,255,0.6)';
-  line(ctx, X(0), Math.round(Y(cell.anchorY)) + 0.5, X(cell.width), Math.round(Y(cell.anchorY)) + 0.5);
+  line(
+    ctx,
+    X(0),
+    Math.round(Y(cell.anchorY)) + 0.5,
+    X(cell.width),
+    Math.round(Y(cell.anchorY)) + 0.5,
+  );
   ctx.setLineDash([3, 4]);
   ctx.strokeStyle = 'rgba(124,156,255,0.32)';
-  line(ctx, Math.round(X(cell.anchorX)) + 0.5, Y(0), Math.round(X(cell.anchorX)) + 0.5, Y(cell.height));
+  line(
+    ctx,
+    Math.round(X(cell.anchorX)) + 0.5,
+    Y(0),
+    Math.round(X(cell.anchorX)) + 0.5,
+    Y(cell.height),
+  );
   ctx.setLineDash([]);
   ctx.fillStyle = 'rgba(124,156,255,0.9)';
   ctx.beginPath();
@@ -73,14 +85,18 @@ export function drawGuides(ctx: CanvasRenderingContext2D, v: View, g: GuideSpec)
   }
 
   if (g.showSideMarkers) {
-    const shoulder = H && g.proportions ? cell.anchorY - H + g.proportions.shoulderY * H : cell.anchorY - cell.height * 0.5;
+    const shoulder =
+      H && g.proportions
+        ? cell.anchorY - H + g.proportions.shoulderY * H
+        : cell.anchorY - cell.height * 0.5;
     const spread = Math.max(cell.width * 0.32, (g.proportions?.widthPx ?? 0) * 0.5);
     const r = g.compact ? 7 : 10;
     for (const side of ['right', 'left'] as const) {
       const p = sidePlacement(g.direction, side);
       const cx = X(cell.anchorX + p.screenX * spread);
       // Near side drawn lower/in front, far side higher/behind.
-      const cy = Y(shoulder) + (p.placement === 'near' ? r * 0.9 : p.placement === 'far' ? -r * 0.9 : 0);
+      const cy =
+        Y(shoulder) + (p.placement === 'near' ? r * 0.9 : p.placement === 'far' ? -r * 0.9 : 0);
       ctx.globalAlpha = p.placement === 'far' ? 0.55 : 1;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -110,7 +126,13 @@ export function drawGuides(ctx: CanvasRenderingContext2D, v: View, g: GuideSpec)
 }
 
 /** Draws a raster (e.g. the opposite-view outline) as a translucent guide. */
-export function drawGuideImage(ctx: CanvasRenderingContext2D, v: View, img: RasterImage, alpha: number, pixelated: boolean): void {
+export function drawGuideImage(
+  ctx: CanvasRenderingContext2D,
+  v: View,
+  img: RasterImage,
+  alpha: number,
+  pixelated: boolean,
+): void {
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.imageSmoothingEnabled = !pixelated;

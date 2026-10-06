@@ -12,7 +12,13 @@ import type { RasterImage } from '../sprite';
 
 function isRaster(v: unknown): v is RasterImage {
   const r = v as RasterImage;
-  return !!r && typeof r.width === 'number' && typeof r.height === 'number' && r.data instanceof Uint8ClampedArray && r.data.length === r.width * r.height * 4;
+  return (
+    !!r &&
+    typeof r.width === 'number' &&
+    typeof r.height === 'number' &&
+    r.data instanceof Uint8ClampedArray &&
+    r.data.length === r.width * r.height * 4
+  );
 }
 
 function normalizeFrame(raw: unknown): Frame {
@@ -55,11 +61,16 @@ export function normalizeProject(raw: unknown): Project {
   const p = (raw ?? {}) as Partial<Project>;
   if (p.format !== 'sprite8-project') throw new Error('This is not a Sprite8 project.');
   if (typeof p.version === 'number' && p.version > 1) {
-    throw new Error(`This project was saved by a newer Sprite8 (format v${p.version}). Please update Sprite8.`);
+    throw new Error(
+      `This project was saved by a newer Sprite8 (format v${p.version}). Please update Sprite8.`,
+    );
   }
   const empty = createEmptyProject();
   const pixelArt = p.source?.import?.pixelArt ?? p.sheet?.pixelPreservation ?? true;
-  const animations = Array.isArray(p.animations) && p.animations.length ? p.animations.map(normalizeAnimation) : empty.animations;
+  const animations =
+    Array.isArray(p.animations) && p.animations.length
+      ? p.animations.map(normalizeAnimation)
+      : empty.animations;
   const source = p.source && isRaster(p.source.sprite) ? p.source : null;
   let character: CharacterModel | null = p.character ?? null;
   if (character && source && p.analysis) {
@@ -91,8 +102,14 @@ export function normalizeProject(raw: unknown): Project {
     character,
     cell: p.cell && p.cell.width > 0 && p.cell.height > 0 ? p.cell : empty.cell,
     animations,
-    activeAnimationId: animations.some((a) => a.id === p.activeAnimationId) ? p.activeAnimationId! : animations[0].id,
-    sheet: { ...defaultSheetSettings(pixelArt), ...(p.sheet ?? {}), order: normalizeOrder(p.sheet?.order) },
+    activeAnimationId: animations.some((a) => a.id === p.activeAnimationId)
+      ? p.activeAnimationId!
+      : animations[0].id,
+    sheet: {
+      ...defaultSheetSettings(pixelArt),
+      ...(p.sheet ?? {}),
+      order: normalizeOrder(p.sheet?.order),
+    },
     generation: { ...defaultGenerationSettings(), ...(p.generation ?? {}) },
   };
 }

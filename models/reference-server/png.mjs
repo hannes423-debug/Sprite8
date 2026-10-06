@@ -39,7 +39,8 @@ function chunk(type, data) {
  * @returns {Uint8Array}
  */
 export function encodePng(width, height, rgba) {
-  if (rgba.length !== width * height * 4) throw new Error('encodePng: data length does not match size');
+  if (rgba.length !== width * height * 4)
+    throw new Error('encodePng: data length does not match size');
   const ihdr = new Uint8Array(13);
   const v = new DataView(ihdr.buffer);
   v.setUint32(0, width);
@@ -53,7 +54,12 @@ export function encodePng(width, height, rgba) {
     raw.set(rgba.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
   }
   const idat = new Uint8Array(deflateSync(raw));
-  const parts = [SIGNATURE, chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', new Uint8Array(0))];
+  const parts = [
+    SIGNATURE,
+    chunk('IHDR', ihdr),
+    chunk('IDAT', idat),
+    chunk('IEND', new Uint8Array(0)),
+  ];
   const total = parts.reduce((s, p) => s + p.length, 0);
   const out = new Uint8Array(total);
   let o = 0;
@@ -93,7 +99,12 @@ export function decodePng(bytes) {
   const idat = [];
   while (pos < bytes.length) {
     const len = view.getUint32(pos);
-    const type = String.fromCharCode(bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7]);
+    const type = String.fromCharCode(
+      bytes[pos + 4],
+      bytes[pos + 5],
+      bytes[pos + 6],
+      bytes[pos + 7],
+    );
     const data = bytes.subarray(pos + 8, pos + 8 + len);
     if (type === 'IHDR') {
       width = view.getUint32(pos + 8);

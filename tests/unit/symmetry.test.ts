@@ -74,7 +74,11 @@ describe('guides provider (no AI)', () => {
   const analysis = analyzeSprite(sprite, { sourceDirection: 'E', pixelArt: true });
   const model = createCharacterModel(sprite, analysis);
 
-  function request(symmetry: 'symmetric' | 'asymmetric', shortcut: boolean, direction: DirectionRequest['direction']): DirectionRequest {
+  function request(
+    symmetry: 'symmetric' | 'asymmetric',
+    shortcut: boolean,
+    direction: DirectionRequest['direction'],
+  ): DirectionRequest {
     const ref = characterReference(model, { name: 'hero', symmetry, sourceDirection: 'E' });
     return {
       direction,
@@ -100,7 +104,9 @@ describe('guides provider (no AI)', () => {
   });
 
   it('does not mirror a symmetric character unless the shortcut is enabled', async () => {
-    expect((await guidesProvider.generateDirection(request('symmetric', false, 'W'), ctx)).kind).toBe('guide');
+    expect(
+      (await guidesProvider.generateDirection(request('symmetric', false, 'W'), ctx)).kind,
+    ).toBe('guide');
     const res = await guidesProvider.generateDirection(request('symmetric', true, 'W'), ctx);
     expect(res.kind).toBe('mirror');
     expect(res.mirroredFrom).toBe('E');
@@ -115,6 +121,15 @@ describe('guides provider (no AI)', () => {
   });
 
   it('refuses variations', async () => {
-    await expect(guidesProvider.generateVariation({ ...request('symmetric', true, 'W'), base: request('symmetric', true, 'W').input, strength: 0.5 }, ctx)).rejects.toThrow(/AI provider/);
+    await expect(
+      guidesProvider.generateVariation(
+        {
+          ...request('symmetric', true, 'W'),
+          base: request('symmetric', true, 'W').input,
+          strength: 0.5,
+        },
+        ctx,
+      ),
+    ).rejects.toThrow(/AI provider/);
   });
 });

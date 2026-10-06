@@ -64,7 +64,12 @@ export interface RegionOptions {
 }
 
 /** Mask of the colour region under (x, y) — the "magic wand" / bucket region. */
-export function colorRegionMask(img: RasterImage, x: number, y: number, opts: RegionOptions = {}): Uint8Array {
+export function colorRegionMask(
+  img: RasterImage,
+  x: number,
+  y: number,
+  opts: RegionOptions = {},
+): Uint8Array {
   const { width, height, data } = img;
   const mask = new Uint8Array(width * height);
   if (x < 0 || y < 0 || x >= width || y >= height) return mask;

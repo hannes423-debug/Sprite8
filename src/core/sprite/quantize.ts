@@ -104,7 +104,11 @@ export function medianCut(entries: PaletteEntry[], maxColors: number): PaletteEn
  * The image's palette: exact colours when there are few of them (pixel art),
  * otherwise a median-cut approximation (painted art).
  */
-export function extractPalette(img: RasterImage, maxColors = 32, alphaThreshold = 128): PaletteEntry[] {
+export function extractPalette(
+  img: RasterImage,
+  maxColors = 32,
+  alphaThreshold = 128,
+): PaletteEntry[] {
   const hist = colorHistogram(img, alphaThreshold);
   const entries: PaletteEntry[] = [];
   for (const [key, count] of hist) {
@@ -158,10 +162,18 @@ export interface QuantizeOptions {
 }
 
 /** Replaces every opaque colour with its nearest palette colour. */
-export function quantizeToPalette(img: RasterImage, palette: Rgba[], opts: QuantizeOptions = {}): RasterImage {
+export function quantizeToPalette(
+  img: RasterImage,
+  palette: Rgba[],
+  opts: QuantizeOptions = {},
+): RasterImage {
   const mapper = new PaletteMapper(palette);
   const threshold = opts.alphaThreshold ?? 128;
-  const out: RasterImage = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  const out: RasterImage = {
+    width: img.width,
+    height: img.height,
+    data: new Uint8ClampedArray(img.data),
+  };
   const d = out.data;
   for (let i = 0; i < d.length; i += 4) {
     const a = d[i + 3];

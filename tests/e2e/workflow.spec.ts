@@ -1,5 +1,15 @@
 import { expect, test } from '@playwright/test';
-import { countColor, download, expectStatus, frameColorCount, opaqueCount, paintLine, png, readZip, workingCell } from './helpers';
+import {
+  countColor,
+  download,
+  expectStatus,
+  frameColorCount,
+  opaqueCount,
+  paintLine,
+  png,
+  readZip,
+  workingCell,
+} from './helpers';
 
 const GREEN: [number, number, number] = [0, 255, 136];
 
@@ -9,11 +19,15 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test('main workflow: upload → asymmetric → source direction → generate → edit one direction → export sprite sheet', async ({ page }) => {
+test('main workflow: upload → asymmetric → source direction → generate → edit one direction → export sprite sheet', async ({
+  page,
+}) => {
   await page.goto('/');
 
   // 1. Upload: a 4× upscaled sprite on an opaque white background.
-  await page.getByTestId('source-file-input').setInputFiles('tests/fixtures/hockey-player-4x-white.png');
+  await page
+    .getByTestId('source-file-input')
+    .setInputFiles('tests/fixtures/hockey-player-4x-white.png');
   await expect(page.getByTestId('source-meta')).toContainText('37×54px');
   await expect(page.getByTestId('source-meta')).toContainText('upscaled 4×');
   await expect(page.getByTestId('source-meta')).toContainText('background removed');
@@ -47,7 +61,9 @@ test('main workflow: upload → asymmetric → source direction → generate →
 
   // Side hints follow the character's handedness.
   await page.getByTestId('cell-N').click();
-  await expect(page.getByTestId('side-hints')).toContainText("The character's right side appears on the RIGHT side of the image.");
+  await expect(page.getByTestId('side-hints')).toContainText(
+    "The character's right side appears on the RIGHT side of the image.",
+  );
 
   // 6–8. Edit one direction (N): stamp the opposite-view outline, paint, undo, redo.
   await page.getByTestId('edit-direction').click();
@@ -126,7 +142,12 @@ test('layout options change the exported sheet', async ({ page }) => {
   expect(opaqueCount(img, { x: 0, y: 96, w: 96, h: 96 })).toBeGreaterThan(500);
   const json = await download(page, () => page.getByTestId('export-json').click());
   const meta = JSON.parse(new TextDecoder().decode(json.bytes));
-  expect(meta).toMatchObject({ cellWidth: 96, cellHeight: 96, anchor: { x: 48, y: 88 }, sheet: { columns: 4, rows: 2 } });
+  expect(meta).toMatchObject({
+    cellWidth: 96,
+    cellHeight: 96,
+    anchor: { x: 48, y: 88 },
+    sheet: { columns: 4, rows: 2 },
+  });
 });
 
 test('keyboard shortcuts on the main screen', async ({ page }) => {

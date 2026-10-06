@@ -97,7 +97,10 @@ export function conformToCharacter(raw: RasterImage, ctx: ConformContext): Confo
   if (Math.abs(scale - 1) > 0.02) {
     const w = Math.max(1, Math.round(content.width * scale));
     const h = Math.max(1, Math.round(content.height * scale));
-    if (scale > 1.5) warnings.push(`The view was enlarged ${scale.toFixed(1)}× to match the character height; details may be soft.`);
+    if (scale > 1.5)
+      warnings.push(
+        `The view was enlarged ${scale.toFixed(1)}× to match the character height; details may be soft.`,
+      );
     if (!ctx.pixelArt) content = scaleSmooth(content, w, h);
     else if (scale < 0.75) content = downscaleMode(content, w, h, { bits: paletteLocked ? 8 : 5 });
     else content = scaleNearest(content, w, h);
@@ -113,7 +116,9 @@ export function conformToCharacter(raw: RasterImage, ctx: ConformContext): Confo
 
   const placed = placeOnAnchor(content, ctx.cell);
   if (placed.clipped) {
-    warnings.push('The view is larger than the working canvas and was clipped. Enlarge the canvas or reduce the scale.');
+    warnings.push(
+      'The view is larger than the working canvas and was clipped. Enlarge the canvas or reduce the scale.',
+    );
   }
   return {
     image: placed.image,

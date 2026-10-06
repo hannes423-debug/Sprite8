@@ -59,6 +59,11 @@ body,
   min-height: 100%;
 }
 
+html {
+  /* Keep focused/scrolled-to elements clear of the sticky header. */
+  scroll-padding-top: 72px;
+}
+
 body {
   background: var(--bg);
   overscroll-behavior-y: none;
@@ -384,6 +389,7 @@ textarea.input.code {
 
 /* Toggle */
 .toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -392,10 +398,20 @@ textarea.input.code {
   user-select: none;
 }
 
+/* The real checkbox covers the whole label, so taps anywhere toggle it. */
 .toggle input {
   position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
-  pointer-events: none;
+  cursor: pointer;
+}
+
+.toggle input:disabled {
+  cursor: not-allowed;
 }
 
 .toggle .track {

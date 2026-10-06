@@ -10,7 +10,13 @@ import {
   type ProviderSettings,
   type VariationRequest,
 } from '../types';
-import { DEFAULT_COMFY_WORKFLOW, fillWorkflow, imageOutputNodes, parseWorkflow, type PlaceholderValues } from './workflow';
+import {
+  DEFAULT_COMFY_WORKFLOW,
+  fillWorkflow,
+  imageOutputNodes,
+  parseWorkflow,
+  type PlaceholderValues,
+} from './workflow';
 
 interface ComfyImageRef {
   filename: string;
@@ -35,7 +41,12 @@ function randomId(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function uploadImage(base: string, blob: Blob, name: string, ctx: ProviderContext): Promise<string> {
+async function uploadImage(
+  base: string,
+  blob: Blob,
+  name: string,
+  ctx: ProviderContext,
+): Promise<string> {
   const form = new FormData();
   form.append('image', blob, name);
   form.append('overwrite', 'true');
@@ -52,16 +63,28 @@ async function uploadImage(base: string, blob: Blob, name: string, ctx: Provider
 }
 
 function describeComfyError(json: unknown): string {
-  const j = json as { error?: { message?: string; details?: string }; node_errors?: Record<string, { errors?: Array<{ message?: string; details?: string }>; class_type?: string }> };
+  const j = json as {
+    error?: { message?: string; details?: string };
+    node_errors?: Record<
+      string,
+      { errors?: Array<{ message?: string; details?: string }>; class_type?: string }
+    >;
+  };
   const parts: string[] = [];
-  if (j?.error?.message) parts.push(j.error.message + (j.error.details ? ` (${j.error.details})` : ''));
+  if (j?.error?.message)
+    parts.push(j.error.message + (j.error.details ? ` (${j.error.details})` : ''));
   for (const [id, ne] of Object.entries(j?.node_errors ?? {})) {
-    for (const e of ne.errors ?? []) parts.push(`node ${id} ${ne.class_type ?? ''}: ${e.message ?? ''} ${e.details ?? ''}`.trim());
+    for (const e of ne.errors ?? [])
+      parts.push(`node ${id} ${ne.class_type ?? ''}: ${e.message ?? ''} ${e.details ?? ''}`.trim());
   }
   return parts.join('; ') || 'unknown error';
 }
 
-async function run(req: DirectionRequest, ctx: ProviderContext, variation?: VariationRequest): Promise<DirectionResult> {
+async function run(
+  req: DirectionRequest,
+  ctx: ProviderContext,
+  variation?: VariationRequest,
+): Promise<DirectionResult> {
   const base = baseUrl(req.settings);
   const timeoutMs = settingNumber(req.settings, 'timeoutSec', 600) * 1000;
   const workflowText = settingString(req.settings, 'workflow').trim() || DEFAULT_COMFY_WORKFLOW;
@@ -70,10 +93,22 @@ async function run(req: DirectionRequest, ctx: ProviderContext, variation?: Vari
 
   ctx.onProgress?.(0.02, 'Uploading images…');
   const mainInput = variation ? variation.base : req.input;
-  const sourceName = await uploadImage(base, await ctx.codec.encodePng(mainInput.image), `sprite8_src_${tag}.png`, ctx);
+  const sourceName = await uploadImage(
+    base,
+    await ctx.codec.encodePng(mainInput.image),
+    `sprite8_src_${tag}.png`,
+    ctx,
+  );
   const refNames: string[] = [];
   for (const [i, ref] of req.references.slice(0, 4).entries()) {
-    refNames.push(await uploadImage(base, await ctx.codec.encodePng(ref.input.image), `sprite8_ref${i + 1}_${tag}.png`, ctx));
+    refNames.push(
+      await uploadImage(
+        base,
+        await ctx.codec.encodePng(ref.input.image),
+        `sprite8_ref${i + 1}_${tag}.png`,
+        ctx,
+      ),
+    );
   }
   const checkpoint = settingString(req.settings, 'checkpoint').trim();
   const values: PlaceholderValues = {
@@ -102,7 +137,9 @@ async function run(req: DirectionRequest, ctx: ProviderContext, variation?: Vari
     const msg = (err as Error).message;
     throw new ProviderError(
       msg,
-      msg.includes('CHECKPOINT') ? 'Set a checkpoint in the ComfyUI provider settings ("Test connection" lists the installed ones).' : undefined,
+      msg.includes('CHECKPOINT')
+        ? 'Set a checkpoint in the ComfyUI provider settings ("Test connection" lists the installed ones).'
+        : undefined,
     );
   }
 
@@ -117,9 +154,15 @@ async function run(req: DirectionRequest, ctx: ProviderContext, variation?: Vari
       signal: withTimeout(ctx.signal, 30_000),
     });
   } catch {
-    throw new ProviderError(`Could not reach ComfyUI at ${base}.`, 'Start ComfyUI with --enable-cors-header (see docs/providers.md).');
+    throw new ProviderError(
+      `Could not reach ComfyUI at ${base}.`,
+      'Start ComfyUI with --enable-cors-header (see docs/providers.md).',
+    );
   }
-  const queuedJson = await readJson<{ prompt_id?: string; node_errors?: Record<string, unknown> }>(queued, 'ComfyUI');
+  const queuedJson = await readJson<{ prompt_id?: string; node_errors?: Record<string, unknown> }>(
+    queued,
+    'ComfyUI',
+  );
   if (!queued.ok || !queuedJson.prompt_id) {
     throw new ProviderError(`ComfyUI rejected the workflow: ${describeComfyError(queuedJson)}`);
   }
@@ -128,13 +171,24 @@ async function run(req: DirectionRequest, ctx: ProviderContext, variation?: Vari
   const started = Date.now();
   let entry: ComfyHistoryEntry | undefined;
   while (!entry) {
-    if (Date.now() - started > timeoutMs) throw new ProviderError('ComfyUI did not finish in time.', 'Increase the timeout or use fewer steps.');
+    if (Date.now() - started > timeoutMs)
+      throw new ProviderError(
+        'ComfyUI did not finish in time.',
+        'Increase the timeout or use fewer steps.',
+      );
     await delay(800, ctx.signal);
-    const res = await fetchChecked(ctx.fetch, joinUrl(base, `history/${promptId}`), { signal: withTimeout(ctx.signal, 15_000) }, 'Polling ComfyUI');
+    const res = await fetchChecked(
+      ctx.fetch,
+      joinUrl(base, `history/${promptId}`),
+      { signal: withTimeout(ctx.signal, 15_000) },
+      'Polling ComfyUI',
+    );
     const hist = await readJson<Record<string, ComfyHistoryEntry>>(res, 'ComfyUI history');
     const e = hist[promptId];
     if (e?.status?.status_str === 'error') {
-      throw new ProviderError(`ComfyUI failed while running the workflow: ${JSON.stringify(e.status.messages ?? []).slice(0, 400)}`);
+      throw new ProviderError(
+        `ComfyUI failed while running the workflow: ${JSON.stringify(e.status.messages ?? []).slice(0, 400)}`,
+      );
     }
     if (e && (e.status?.completed || (e.outputs && Object.keys(e.outputs).length > 0))) entry = e;
     else {
@@ -151,10 +205,22 @@ async function run(req: DirectionRequest, ctx: ProviderContext, variation?: Vari
     image = outputs[id]?.images?.[0];
     if (image) break;
   }
-  if (!image) throw new ProviderError('The workflow finished but produced no image output (add a SaveImage node).');
+  if (!image)
+    throw new ProviderError(
+      'The workflow finished but produced no image output (add a SaveImage node).',
+    );
   ctx.onProgress?.(0.95, 'Downloading result…');
-  const params = new URLSearchParams({ filename: image.filename, subfolder: image.subfolder ?? '', type: image.type ?? 'output' });
-  const res = await fetchChecked(ctx.fetch, `${joinUrl(base, 'view')}?${params}`, { signal: withTimeout(ctx.signal, 60_000) }, 'Downloading the ComfyUI result');
+  const params = new URLSearchParams({
+    filename: image.filename,
+    subfolder: image.subfolder ?? '',
+    type: image.type ?? 'output',
+  });
+  const res = await fetchChecked(
+    ctx.fetch,
+    `${joinUrl(base, 'view')}?${params}`,
+    { signal: withTimeout(ctx.signal, 60_000) },
+    'Downloading the ComfyUI result',
+  );
   const decoded = await ctx.codec.decode(await res.blob());
   return { kind: 'ai', image: decoded, seed: req.seed, notes: [`ComfyUI prompt ${promptId}`] };
 }
@@ -165,7 +231,13 @@ export const comfyUIProvider: ImageGenerationProvider = {
   kind: 'local-ai',
   description:
     'Runs your own ComfyUI workflow (exported with "Save (API Format)"). Sprite8 uploads the source view, fills {{PLACEHOLDERS}} and downloads the result. Works with any local model ComfyUI supports.',
-  capabilities: { generatesNewViews: true, variations: true, analysis: false, references: true, seeds: true },
+  capabilities: {
+    generatesNewViews: true,
+    variations: true,
+    analysis: false,
+    references: true,
+    seeds: true,
+  },
   settingsFields: [
     {
       key: 'baseUrl',
@@ -182,7 +254,16 @@ export const comfyUIProvider: ImageGenerationProvider = {
       placeholder: 'e.g. sd_xl_base_1.0.safetensors',
       help: 'Fills {{CHECKPOINT}} in the workflow. "Test connection" lists installed checkpoints.',
     },
-    { key: 'denoise', label: 'Denoise', type: 'number', default: 0.8, min: 0, max: 1, step: 0.05, help: 'How far a view may move away from the source. Higher = more rotation, less identity.' },
+    {
+      key: 'denoise',
+      label: 'Denoise',
+      type: 'number',
+      default: 0.8,
+      min: 0,
+      max: 1,
+      step: 0.05,
+      help: 'How far a view may move away from the source. Higher = more rotation, less identity.',
+    },
     { key: 'steps', label: 'Steps', type: 'number', default: 24, min: 1, max: 150 },
     { key: 'cfg', label: 'CFG', type: 'number', default: 6.5, min: 0, max: 30, step: 0.5 },
     {
@@ -193,26 +274,65 @@ export const comfyUIProvider: ImageGenerationProvider = {
       advanced: true,
       help: 'Paste a workflow saved with "Save (API Format)". Placeholders: {{SOURCE_IMAGE}}, {{REFERENCE_IMAGE_1}}…{{REFERENCE_IMAGE_4}}, {{PROMPT}}, {{NEGATIVE_PROMPT}}, {{INSTRUCTION}}, {{SEED}}, {{STEPS}}, {{CFG}}, {{DENOISE}}, {{WIDTH}}, {{HEIGHT}}, {{CHECKPOINT}}, {{DIRECTION}}.',
     },
-    { key: 'outputNode', label: 'Output node id', type: 'text', default: '', advanced: true, help: 'Leave empty to use the first image output.' },
-    { key: 'timeoutSec', label: 'Timeout (seconds)', type: 'number', default: 600, min: 10, max: 7200, advanced: true },
+    {
+      key: 'outputNode',
+      label: 'Output node id',
+      type: 'text',
+      default: '',
+      advanced: true,
+      help: 'Leave empty to use the first image output.',
+    },
+    {
+      key: 'timeoutSec',
+      label: 'Timeout (seconds)',
+      type: 'number',
+      default: 600,
+      min: 10,
+      max: 7200,
+      advanced: true,
+    },
   ],
 
   async checkStatus(settings, ctx) {
     try {
       const base = baseUrl(settings);
-      const res = await fetchChecked(ctx.fetch, joinUrl(base, 'system_stats'), { signal: withTimeout(ctx.signal, 8000) }, 'Connecting to ComfyUI');
-      const stats = await readJson<{ system?: { comfyui_version?: string }; devices?: Array<{ name?: string }> }>(res, 'ComfyUI');
+      const res = await fetchChecked(
+        ctx.fetch,
+        joinUrl(base, 'system_stats'),
+        { signal: withTimeout(ctx.signal, 8000) },
+        'Connecting to ComfyUI',
+      );
+      const stats = await readJson<{
+        system?: { comfyui_version?: string };
+        devices?: Array<{ name?: string }>;
+      }>(res, 'ComfyUI');
       const details: string[] = [];
-      if (stats.devices?.length) details.push(`Device: ${stats.devices.map((d) => d.name).join(', ')}`);
+      if (stats.devices?.length)
+        details.push(`Device: ${stats.devices.map((d) => d.name).join(', ')}`);
       try {
-        const info = await fetchChecked(ctx.fetch, joinUrl(base, 'object_info/CheckpointLoaderSimple'), { signal: withTimeout(ctx.signal, 8000) }, 'Listing checkpoints');
-        const json = await readJson<{ CheckpointLoaderSimple?: { input?: { required?: { ckpt_name?: [string[]] } } } }>(info, 'ComfyUI');
+        const info = await fetchChecked(
+          ctx.fetch,
+          joinUrl(base, 'object_info/CheckpointLoaderSimple'),
+          { signal: withTimeout(ctx.signal, 8000) },
+          'Listing checkpoints',
+        );
+        const json = await readJson<{
+          CheckpointLoaderSimple?: { input?: { required?: { ckpt_name?: [string[]] } } };
+        }>(info, 'ComfyUI');
         const names = json.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0] ?? [];
-        details.push(names.length ? `Checkpoints: ${names.join(', ')}` : 'No checkpoints found in models/checkpoints.');
+        details.push(
+          names.length
+            ? `Checkpoints: ${names.join(', ')}`
+            : 'No checkpoints found in models/checkpoints.',
+        );
       } catch {
         details.push('Could not list checkpoints.');
       }
-      return { ok: true, message: `Connected to ComfyUI${stats.system?.comfyui_version ? ` ${stats.system.comfyui_version}` : ''}.`, details };
+      return {
+        ok: true,
+        message: `Connected to ComfyUI${stats.system?.comfyui_version ? ` ${stats.system.comfyui_version}` : ''}.`,
+        details,
+      };
     } catch (err) {
       const e = err as ProviderError;
       return { ok: false, message: e.message, details: e.hint ? [e.hint] : undefined };

@@ -1,4 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import type { EditorController, PointerInfo } from '../../editor/controller';
 
 function info(e: ReactPointerEvent<HTMLCanvasElement>): PointerInfo {

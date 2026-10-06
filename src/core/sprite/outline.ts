@@ -14,7 +14,12 @@ export function boundaryMask(img: RasterImage): Uint8Array {
   for (let y = 0; y < img.height; y++) {
     for (let x = 0; x < img.width; x++) {
       if (!isOpaque(img, x, y)) continue;
-      if (!isOpaque(img, x - 1, y) || !isOpaque(img, x + 1, y) || !isOpaque(img, x, y - 1) || !isOpaque(img, x, y + 1)) {
+      if (
+        !isOpaque(img, x - 1, y) ||
+        !isOpaque(img, x + 1, y) ||
+        !isOpaque(img, x, y - 1) ||
+        !isOpaque(img, x, y + 1)
+      ) {
         mask[y * img.width + x] = 1;
       }
     }
@@ -94,11 +99,19 @@ export function detectOutline(img: RasterImage): OutlineInfo {
  * silhouette size identical while enforcing the source's outline style.
  */
 export function applyOutline(img: RasterImage, color: Rgba, thickness = 1): RasterImage {
-  let out: RasterImage = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  let out: RasterImage = {
+    width: img.width,
+    height: img.height,
+    data: new Uint8ClampedArray(img.data),
+  };
   for (let pass = 0; pass < Math.max(1, thickness); pass++) {
     const source = pass === 0 ? img : out;
     const mask = pass === 0 ? boundaryMask(source) : innerRing(source, out, color);
-    const next: RasterImage = { width: out.width, height: out.height, data: new Uint8ClampedArray(out.data) };
+    const next: RasterImage = {
+      width: out.width,
+      height: out.height,
+      data: new Uint8ClampedArray(out.data),
+    };
     for (let p = 0; p < mask.length; p++) {
       if (!mask[p]) continue;
       const i = p * 4;
@@ -124,7 +137,12 @@ function innerRing(original: RasterImage, current: RasterImage, color: Rgba): Ui
     for (let x = 0; x < w; x++) {
       const p = y * w + x;
       if (!isOpaque(original, x, y) || isOutline(p)) continue;
-      if ((x > 0 && isOutline(p - 1)) || (x < w - 1 && isOutline(p + 1)) || (y > 0 && isOutline(p - w)) || (y < original.height - 1 && isOutline(p + w))) {
+      if (
+        (x > 0 && isOutline(p - 1)) ||
+        (x < w - 1 && isOutline(p + 1)) ||
+        (y > 0 && isOutline(p - w)) ||
+        (y < original.height - 1 && isOutline(p + w))
+      ) {
         mask[p] = 1;
       }
     }

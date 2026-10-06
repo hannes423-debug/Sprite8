@@ -1,11 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "react",
-    "typescript",
-    "oxc",
-    "import"
-  ],
+  "plugins": ["react", "typescript", "oxc", "import"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -23,35 +18,21 @@
     "no-console": [
       "warn",
       {
-        "allow": [
-          "warn",
-          "error"
-        ]
+        "allow": ["warn", "error"]
       }
     ],
     "react/react-in-jsx-scope": "off",
     "import/no-unassigned-import": [
       "warn",
       {
-        "allow": [
-          "**/*.css"
-        ]
+        "allow": ["**/*.css"]
       }
     ]
   },
-  "ignorePatterns": [
-    "dist",
-    "node_modules",
-    "test-results",
-    "playwright-report"
-  ],
+  "ignorePatterns": ["dist", "node_modules", "test-results", "playwright-report"],
   "overrides": [
     {
-      "files": [
-        "scripts/**",
-        "models/**",
-        "tests/**"
-      ],
+      "files": ["scripts/**", "models/**", "tests/**"],
       "rules": {
         "no-console": "off"
       }

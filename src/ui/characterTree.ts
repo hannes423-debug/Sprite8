@@ -1,4 +1,9 @@
-import { ART_STYLE_LABELS, SHADING_LABELS, type CharacterFeature, type CharacterModel } from '../core/character';
+import {
+  ART_STYLE_LABELS,
+  SHADING_LABELS,
+  type CharacterFeature,
+  type CharacterModel,
+} from '../core/character';
 import type { ProjectSetup } from '../core/project';
 
 /** Text rendering of the persistent character reference. */
@@ -7,7 +12,14 @@ export function characterTree(model: CharacterModel, setup: ProjectSetup): strin
   const pct = (v: number) => `${Math.round(v * 100)}%`;
   const group = (cat: CharacterFeature['category']) => {
     const items = model.features.filter((f) => f.category === cat);
-    return items.length ? items.map((f) => `${f.name} (${f.side}${f.side === 'right' || f.side === 'left' ? ` ${f.attachment}` : ''})`).join(', ') : '—';
+    return items.length
+      ? items
+          .map(
+            (f) =>
+              `${f.name} (${f.side}${f.side === 'right' || f.side === 'left' ? ` ${f.attachment}` : ''})`,
+          )
+          .join(', ')
+      : '—';
   };
   const part = (k: keyof CharacterModel['anatomy']) => {
     const a = model.anatomy[k];

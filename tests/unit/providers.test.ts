@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { encodePng } from '../../models/reference-server/png.mjs';
 import { analyzeSprite } from '../../src/core/analysis';
 import { createCharacterModel } from '../../src/core/character';
-import { activeAnimation, createEmptyProject, projectWithSource, type Project } from '../../src/core/project';
+import {
+  activeAnimation,
+  createEmptyProject,
+  projectWithSource,
+  type Project,
+} from '../../src/core/project';
 import {
   a1111Provider,
   comfyUIProvider,
@@ -25,7 +30,17 @@ import {
   shouldApplyView,
 } from '../../src/core/generation';
 import { characterReference } from '../../src/core/character';
-import { findFeet, flipHorizontal, normalizeImport, paletteCoverage, scaleNearest, blit, createRaster, hexToRgba, type Rgba } from '../../src/core/sprite';
+import {
+  findFeet,
+  flipHorizontal,
+  normalizeImport,
+  paletteCoverage,
+  scaleNearest,
+  blit,
+  createRaster,
+  hexToRgba,
+  type Rgba,
+} from '../../src/core/sprite';
 import { C, humanoid, nodeCodec, outlined } from './helpers';
 
 function pngBase64(img: { width: number; height: number; data: Uint8ClampedArray }): string {
@@ -35,21 +50,33 @@ function pngBase64(img: { width: number; height: number; data: Uint8ClampedArray
 /** A high-res "AI render" of the back view: flipped sprite, upscaled, on white. */
 function backViewRender(): { width: number; height: number; data: Uint8ClampedArray } {
   const back = flipHorizontal(outlined(humanoid({ stick: 'screen-left' })));
-  return blit(createRaster(512, 512, C.white), scaleNearest(back, back.width * 8, back.height * 8), 90, 50);
+  return blit(
+    createRaster(512, 512, C.white),
+    scaleNearest(back, back.width * 8, back.height * 8),
+    90,
+    50,
+  );
 }
 
 function readyProject(): Project {
   const sprite = outlined(humanoid({ stick: 'screen-left' }));
   let project = projectWithSource(createEmptyProject(), normalizeImport(sprite), 'hockey.png');
   const analysis = analyzeSprite(project.source!.sprite, { sourceDirection: 'S', pixelArt: true });
-  project = { ...project, analysis, character: createCharacterModel(project.source!.sprite, analysis) };
+  project = {
+    ...project,
+    analysis,
+    character: createCharacterModel(project.source!.sprite, analysis),
+  };
   project = { ...project, generation: { ...project.generation, generationSize: 512 } };
   return project;
 }
 
 type Handler = (url: URL, init: RequestInit | undefined) => Promise<Response> | Response;
 
-function mockFetch(handler: Handler): { fetch: typeof fetch; calls: Array<{ url: string; method: string }> } {
+function mockFetch(handler: Handler): {
+  fetch: typeof fetch;
+  calls: Array<{ url: string; method: string }>;
+} {
   const calls: Array<{ url: string; method: string }> = [];
   const fn = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input));
@@ -59,17 +86,31 @@ function mockFetch(handler: Handler): { fetch: typeof fetch; calls: Array<{ url:
   return { fetch: fn, calls };
 }
 
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 describe('ComfyUI workflow templates', () => {
   it('ships a valid default workflow with the expected placeholders', () => {
     const wf = parseWorkflow(DEFAULT_COMFY_WORKFLOW);
     expect(Object.values(wf).some((n) => n.class_type === 'SaveImage')).toBe(true);
-    expect([...findPlaceholders(wf)].sort()).toEqual(['CFG', 'CHECKPOINT', 'DENOISE', 'DIRECTION', 'NEGATIVE_PROMPT', 'PROMPT', 'SEED', 'SOURCE_IMAGE', 'STEPS']);
+    expect([...findPlaceholders(wf)].sort()).toEqual([
+      'CFG',
+      'CHECKPOINT',
+      'DENOISE',
+      'DIRECTION',
+      'NEGATIVE_PROMPT',
+      'PROMPT',
+      'SEED',
+      'SOURCE_IMAGE',
+      'STEPS',
+    ]);
   });
 
   it('fills placeholders with typed values', () => {
-    const filled = fillWorkflow({ a: '{{SEED}}', b: 'x_{{DIRECTION}}', c: ['{{PROMPT}}', 1] }, { SEED: 42, DIRECTION: 'NE', PROMPT: 'hi' });
+    const filled = fillWorkflow(
+      { a: '{{SEED}}', b: 'x_{{DIRECTION}}', c: ['{{PROMPT}}', 1] },
+      { SEED: 42, DIRECTION: 'NE', PROMPT: 'hi' },
+    );
     expect(filled).toEqual({ a: 42, b: 'x_NE', c: ['hi', 1] });
   });
 
@@ -101,7 +142,10 @@ describe('generation orchestrator', () => {
     const p = readyProject();
     expect(generationOrder(p).slice(0, 3)).toEqual(['S', 'SE', 'SW']);
     const anim = activeAnimation(p);
-    const locked = { ...p, animations: [{ ...anim, tracks: { ...anim.tracks, N: { ...anim.tracks.N, locked: true } } }] };
+    const locked = {
+      ...p,
+      animations: [{ ...anim, tracks: { ...anim.tracks, N: { ...anim.tracks.N, locked: true } } }],
+    };
     expect(generationOrder(locked)).not.toContain('N');
     expect(seedFor(100, 'N')).not.toBe(seedFor(100, 'NE'));
   });
@@ -124,7 +168,15 @@ describe('generation orchestrator', () => {
 
   it('returns the source unchanged for the source direction', async () => {
     const p = readyProject();
-    const view = await generateView({ project: p, provider: sprite8HttpProvider, providerSettings: {}, direction: 'S', seed: 1, mode: 'generate', ctx: { codec: nodeCodec, fetch: () => Promise.reject(new Error('no network')) } });
+    const view = await generateView({
+      project: p,
+      provider: sprite8HttpProvider,
+      providerSettings: {},
+      direction: 'S',
+      seed: 1,
+      mode: 'generate',
+      ctx: { codec: nodeCodec, fetch: () => Promise.reject(new Error('no network')) },
+    });
     expect(view.status).toBe('source');
   });
 
@@ -141,7 +193,9 @@ describe('generation orchestrator', () => {
     const view = await generateView({
       project: p,
       provider: sprite8HttpProvider,
-      providerSettings: resolveProviderSettings(sprite8HttpProvider, { endpoint: 'http://ai.local' }),
+      providerSettings: resolveProviderSettings(sprite8HttpProvider, {
+        endpoint: 'http://ai.local',
+      }),
       direction: 'N',
       seed: 7,
       mode: 'generate',
@@ -160,14 +214,27 @@ describe('generation orchestrator', () => {
     const palette = p.character!.colors.palette.map((h) => hexToRgba(h)!) as Rgba[];
     expect(paletteCoverage(view.image!, palette)).toBe(1);
     expect(findFeet(view.image!)!.groundY).toBe(p.cell.anchorY);
-    expect(Math.abs(findFeet(view.image!)!.bounds.height - p.source!.sprite.height)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(findFeet(view.image!)!.bounds.height - p.source!.sprite.height),
+    ).toBeLessThanOrEqual(1);
     expect(progress.length).toBeGreaterThan(0);
   });
 
   it('never lets a guide result wipe existing pixels', () => {
-    const view = { direction: 'N' as const, frame: 0, image: null, status: 'guide' as const, origin: { kind: 'guide' as const, createdAt: 0 }, warnings: [] };
-    expect(shouldApplyView({ id: 'a', image: createRaster(2, 2), status: 'edited', origin: null }, view)).toBe(false);
-    expect(shouldApplyView({ id: 'a', image: null, status: 'empty', origin: null }, view)).toBe(true);
+    const view = {
+      direction: 'N' as const,
+      frame: 0,
+      image: null,
+      status: 'guide' as const,
+      origin: { kind: 'guide' as const, createdAt: 0 },
+      warnings: [],
+    };
+    expect(
+      shouldApplyView({ id: 'a', image: createRaster(2, 2), status: 'edited', origin: null }, view),
+    ).toBe(false);
+    expect(shouldApplyView({ id: 'a', image: null, status: 'empty', origin: null }, view)).toBe(
+      true,
+    );
   });
 });
 
@@ -190,18 +257,29 @@ describe('ComfyUI provider', () => {
       if (url.pathname === '/history/p1') {
         polls++;
         if (polls < 2) return json({});
-        return json({ p1: { status: { completed: true, status_str: 'success' }, outputs: { '8': { images: [{ filename: 'out.png', subfolder: '', type: 'output' }] } } } });
+        return json({
+          p1: {
+            status: { completed: true, status_str: 'success' },
+            outputs: { '8': { images: [{ filename: 'out.png', subfolder: '', type: 'output' }] } },
+          },
+        });
       }
       if (url.pathname === '/view') {
         expect(url.searchParams.get('filename')).toBe('out.png');
-        return new Response(encodePng(512, 512, backViewRender().data) as Uint8Array<ArrayBuffer>, { headers: { 'Content-Type': 'image/png' } });
+        return new Response(encodePng(512, 512, backViewRender().data) as Uint8Array<ArrayBuffer>, {
+          headers: { 'Content-Type': 'image/png' },
+        });
       }
       return new Response('not found', { status: 404 });
     });
     const view = await generateView({
       project: p,
       provider: comfyUIProvider,
-      providerSettings: resolveProviderSettings(comfyUIProvider, { baseUrl: 'http://comfy.local', checkpoint: 'sd15.safetensors', steps: 12 }),
+      providerSettings: resolveProviderSettings(comfyUIProvider, {
+        baseUrl: 'http://comfy.local',
+        checkpoint: 'sd15.safetensors',
+        steps: 12,
+      }),
       direction: 'N',
       seed: 1234,
       mode: 'generate',
@@ -213,20 +291,40 @@ describe('ComfyUI provider', () => {
     expect(queued['6'].inputs.seed).toBe(1234);
     expect(queued['6'].inputs.steps).toBe(12);
     expect(String(queued['4'].inputs.text)).toContain('back view');
-    expect(calls.map((c) => c.url.split('?')[0])).toEqual(['/upload/image', '/prompt', '/history/p1', '/history/p1', '/view']);
+    expect(calls.map((c) => c.url.split('?')[0])).toEqual([
+      '/upload/image',
+      '/prompt',
+      '/history/p1',
+      '/history/p1',
+      '/view',
+    ]);
   });
 
   it('surfaces workflow errors from ComfyUI', async () => {
     const p = readyProject();
     const { fetch } = mockFetch(async (url) => {
       if (url.pathname === '/upload/image') return json({ name: 'a.png' });
-      return json({ error: { message: 'Prompt outputs failed validation' }, node_errors: { '1': { class_type: 'CheckpointLoaderSimple', errors: [{ message: 'Value not in list', details: 'ckpt_name' }] } } }, 400);
+      return json(
+        {
+          error: { message: 'Prompt outputs failed validation' },
+          node_errors: {
+            '1': {
+              class_type: 'CheckpointLoaderSimple',
+              errors: [{ message: 'Value not in list', details: 'ckpt_name' }],
+            },
+          },
+        },
+        400,
+      );
     });
     await expect(
       generateView({
         project: p,
         provider: comfyUIProvider,
-        providerSettings: resolveProviderSettings(comfyUIProvider, { baseUrl: 'http://comfy.local', checkpoint: 'missing' }),
+        providerSettings: resolveProviderSettings(comfyUIProvider, {
+          baseUrl: 'http://comfy.local',
+          checkpoint: 'missing',
+        }),
         direction: 'N',
         seed: 1,
         mode: 'generate',
@@ -239,7 +337,15 @@ describe('ComfyUI provider', () => {
     const p = readyProject();
     const { fetch } = mockFetch(async () => json({ name: 'a.png' }));
     await expect(
-      generateView({ project: p, provider: comfyUIProvider, providerSettings: resolveProviderSettings(comfyUIProvider, {}), direction: 'N', seed: 1, mode: 'generate', ctx: { codec: nodeCodec, fetch } }),
+      generateView({
+        project: p,
+        provider: comfyUIProvider,
+        providerSettings: resolveProviderSettings(comfyUIProvider, {}),
+        direction: 'N',
+        seed: 1,
+        mode: 'generate',
+        ctx: { codec: nodeCodec, fetch },
+      }),
     ).rejects.toThrow(/CHECKPOINT/);
   });
 
@@ -247,9 +353,16 @@ describe('ComfyUI provider', () => {
     const { fetch } = mockFetch(async (url) =>
       url.pathname === '/system_stats'
         ? json({ system: { comfyui_version: '0.3.60' }, devices: [{ name: 'cuda:0' }] })
-        : json({ CheckpointLoaderSimple: { input: { required: { ckpt_name: [['a.safetensors', 'b.ckpt']] } } } }),
+        : json({
+            CheckpointLoaderSimple: {
+              input: { required: { ckpt_name: [['a.safetensors', 'b.ckpt']] } },
+            },
+          }),
     );
-    const status = await comfyUIProvider.checkStatus({ baseUrl: 'http://comfy.local' }, { codec: nodeCodec, fetch });
+    const status = await comfyUIProvider.checkStatus(
+      { baseUrl: 'http://comfy.local' },
+      { codec: nodeCodec, fetch },
+    );
     expect(status.ok).toBe(true);
     expect(status.details?.join(' ')).toContain('a.safetensors, b.ckpt');
   });
@@ -267,7 +380,10 @@ describe('Stable Diffusion WebUI provider', () => {
     const view = await generateView({
       project: p,
       provider: a1111Provider,
-      providerSettings: resolveProviderSettings(a1111Provider, { baseUrl: 'http://sd.local', denoise: 0.6 }),
+      providerSettings: resolveProviderSettings(a1111Provider, {
+        baseUrl: 'http://sd.local',
+        denoise: 0.6,
+      }),
       direction: 'N',
       seed: 5,
       mode: 'generate',
@@ -283,7 +399,12 @@ describe('Stable Diffusion WebUI provider', () => {
     const p = readyProject();
     const { fetch } = mockFetch(async () => json({ caption: 'a hockey player holding a stick' }));
     const hints = await a1111Provider.analyzeCharacter(
-      { sprite: p.source!.sprite, analysis: p.analysis!, character: characterReference(p.character!, p.setup), settings: resolveProviderSettings(a1111Provider, { baseUrl: 'http://sd.local' }) },
+      {
+        sprite: p.source!.sprite,
+        analysis: p.analysis!,
+        character: characterReference(p.character!, p.setup),
+        settings: resolveProviderSettings(a1111Provider, { baseUrl: 'http://sd.local' }),
+      },
       { codec: nodeCodec, fetch },
     );
     expect(hints.description).toBe('a hockey player holding a stick');
@@ -296,11 +417,22 @@ describe('friendly network errors', () => {
     const fetch = (async () => {
       throw new TypeError('Failed to fetch');
     }) as typeof globalThis.fetch;
-    const status = await sprite8HttpProvider.checkStatus({ endpoint: 'http://127.0.0.1:9' }, { codec: nodeCodec, fetch });
+    const status = await sprite8HttpProvider.checkStatus(
+      { endpoint: 'http://127.0.0.1:9' },
+      { codec: nodeCodec, fetch },
+    );
     expect(status.ok).toBe(false);
     expect(status.details?.join(' ')).toMatch(/CORS/);
     await expect(
-      generateView({ project: p, provider: sprite8HttpProvider, providerSettings: { endpoint: 'http://127.0.0.1:9' }, direction: 'N', seed: 1, mode: 'generate', ctx: { codec: nodeCodec, fetch } }),
+      generateView({
+        project: p,
+        provider: sprite8HttpProvider,
+        providerSettings: { endpoint: 'http://127.0.0.1:9' },
+        direction: 'N',
+        seed: 1,
+        mode: 'generate',
+        ctx: { codec: nodeCodec, fetch },
+      }),
     ).rejects.toThrow(/Could not reach/);
   });
 });

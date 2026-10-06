@@ -22,7 +22,11 @@ function differs(d: Uint8ClampedArray, i: number, j: number, threshold: number):
   return dr * dr + dg * dg + db * db > threshold * threshold;
 }
 
-function bestPeriod(events: Int32Array, maxScale: number, minRatio: number): Map<number, { offset: number; ratio: number }> {
+function bestPeriod(
+  events: Int32Array,
+  maxScale: number,
+  minRatio: number,
+): Map<number, { offset: number; ratio: number }> {
   const out = new Map<number, { offset: number; ratio: number }>();
   let total = 0;
   for (let i = 0; i < events.length; i++) total += events[i];
@@ -71,7 +75,12 @@ export function detectPixelScale(
     const c = cols.get(k);
     const r = rows.get(k);
     if (c && r) {
-      return { scale: k, offsetX: c.offset, offsetY: r.offset, confidence: Math.min(c.ratio, r.ratio) };
+      return {
+        scale: k,
+        offsetX: c.offset,
+        offsetY: r.offset,
+        confidence: Math.min(c.ratio, r.ratio),
+      };
     }
   }
   return none;
@@ -81,8 +90,14 @@ export function detectPixelScale(
  * Reverses an integer upscale: every k×k block becomes one pixel (the most
  * common colour of the block, robust against small compression noise).
  */
-export function downsamplePixelArt(img: RasterImage, scale: number, offsetX = 0, offsetY = 0): RasterImage {
-  if (scale <= 1) return { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+export function downsamplePixelArt(
+  img: RasterImage,
+  scale: number,
+  offsetX = 0,
+  offsetY = 0,
+): RasterImage {
+  if (scale <= 1)
+    return { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
   const k = scale;
   const ox = ((offsetX % k) + k) % k;
   const oy = ((offsetY % k) + k) % k;

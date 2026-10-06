@@ -31,7 +31,10 @@ export interface MirrorPlan {
  * For every requested target without content, use its mirror partner if that
  * partner has content (or will have it, e.g. the source direction).
  */
-export function planMirrorDerivations(available: ReadonlySet<Direction>, targets: readonly Direction[] = DIRECTIONS): MirrorPlan[] {
+export function planMirrorDerivations(
+  available: ReadonlySet<Direction>,
+  targets: readonly Direction[] = DIRECTIONS,
+): MirrorPlan[] {
   const plans: MirrorPlan[] = [];
   for (const target of targets) {
     if (available.has(target) || !isMirrorDerivable(target)) continue;
@@ -59,7 +62,11 @@ export const MIRROR_CAVEATS = [
  */
 export function symmetrize(img: RasterImage, axisX: number, keep: 'left' | 'right'): RasterImage {
   const axis = Math.round(axisX * 2) / 2;
-  const out: RasterImage = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  const out: RasterImage = {
+    width: img.width,
+    height: img.height,
+    data: new Uint8ClampedArray(img.data),
+  };
   const mirrored = mirrorAroundAxis(img, axis);
   // Overwrite the discarded half with the mirrored kept half.
   const start = keep === 'left' ? Math.ceil(axis) : 0;
@@ -77,9 +84,16 @@ export function symmetrize(img: RasterImage, axisX: number, keep: 'left' | 'righ
 }
 
 /** Mirrors only a rectangular region in place (editor "mirror selection"). */
-export function mirrorRegion(img: RasterImage, rect: { x: number; y: number; width: number; height: number }): RasterImage {
+export function mirrorRegion(
+  img: RasterImage,
+  rect: { x: number; y: number; width: number; height: number },
+): RasterImage {
   const region = flipHorizontal(crop(img, rect));
-  const out: RasterImage = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
+  const out: RasterImage = {
+    width: img.width,
+    height: img.height,
+    data: new Uint8ClampedArray(img.data),
+  };
   blitInPlace(out, region, rect.x, rect.y, 'replace');
   return out;
 }

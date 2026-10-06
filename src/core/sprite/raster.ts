@@ -46,7 +46,11 @@ export function createRaster(width: number, height: number, fill?: Rgba): Raster
   return { width: w, height: h, data };
 }
 
-export function rasterFromData(width: number, height: number, data: ArrayLike<number>): RasterImage {
+export function rasterFromData(
+  width: number,
+  height: number,
+  data: ArrayLike<number>,
+): RasterImage {
   if (data.length !== width * height * 4) {
     throw new Error(`Raster data length ${data.length} does not match ${width}x${height}`);
   }

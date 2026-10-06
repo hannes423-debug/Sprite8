@@ -26,7 +26,11 @@ export function rasterCanvas(img: RasterImage): HTMLCanvasElement {
   if (!c) {
     c = createCanvas(img.width, img.height);
     if (img.width > 0 && img.height > 0) {
-      context2d(c).putImageData(new ImageData(new Uint8ClampedArray(img.data), img.width, img.height), 0, 0);
+      context2d(c).putImageData(
+        new ImageData(new Uint8ClampedArray(img.data), img.width, img.height),
+        0,
+        0,
+      );
     }
     canvasCache.set(img, c);
   }
@@ -40,7 +44,11 @@ export function putRaster(canvas: HTMLCanvasElement, img: RasterImage): void {
     canvas.height = Math.max(1, img.height);
   }
   if (img.width > 0 && img.height > 0) {
-    context2d(canvas).putImageData(new ImageData(new Uint8ClampedArray(img.data), img.width, img.height), 0, 0);
+    context2d(canvas).putImageData(
+      new ImageData(new Uint8ClampedArray(img.data), img.width, img.height),
+      0,
+      0,
+    );
   }
 }
 
@@ -55,7 +63,10 @@ const MAX_DECODE_SIDE = 4096;
 export async function decodeImage(blob: Blob): Promise<RasterImage> {
   let bitmap: ImageBitmap;
   try {
-    bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+    bitmap = await createImageBitmap(blob, {
+      colorSpaceConversion: 'none',
+      premultiplyAlpha: 'none',
+    });
   } catch {
     throw new Error('This file could not be read as an image (PNG, GIF, WebP or JPEG expected).');
   }

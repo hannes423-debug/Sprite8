@@ -20,7 +20,11 @@ async function flushSave(): Promise<void> {
     setUi({ lastSavedAt: Date.now() });
   } catch (err) {
     storageBroken = true;
-    toast('warn', 'Autosave is not available in this browser.', `${(err as Error).message} Use "Save project" to keep your work.`);
+    toast(
+      'warn',
+      'Autosave is not available in this browser.',
+      `${(err as Error).message} Use "Save project" to keep your work.`,
+    );
   }
 }
 
@@ -30,7 +34,11 @@ export async function initPersistence(): Promise<void> {
     const restored = await loadCurrentProject();
     if (restored && !getState().project.source) {
       lastSavedProject = restored;
-      store.setState((s) => ({ ...s, project: restored, ui: { ...s.ui, selected: restored.setup.sourceDirection } }));
+      store.setState((s) => ({
+        ...s,
+        project: restored,
+        ui: { ...s.ui, selected: restored.setup.sourceDirection },
+      }));
       toast('info', `Restored “${restored.setup.name}” from your last session.`, undefined, 2500);
     }
   } catch {

@@ -1,6 +1,11 @@
 import type { SpriteAnalysis } from '../analysis/analyzeSprite';
 import type { FrameStatus } from '../animation';
-import type { CharacterFeature, CharacterReference, CharacterType, Handedness } from '../character/model';
+import type {
+  CharacterFeature,
+  CharacterReference,
+  CharacterType,
+  Handedness,
+} from '../character/model';
 import type { Direction } from '../directions';
 import type { DirectionPrompt } from '../generation/prompt';
 import type { PreparedInput } from '../generation/prepareInput';

@@ -115,5 +115,10 @@ export function characterReference(
   model: CharacterModel,
   setup: { name: string; symmetry: SymmetryMode; sourceDirection: Direction },
 ): CharacterReference {
-  return { ...model, name: setup.name, symmetry: setup.symmetry, sourceDirection: setup.sourceDirection };
+  return {
+    ...model,
+    name: setup.name,
+    symmetry: setup.symmetry,
+    sourceDirection: setup.sourceDirection,
+  };
 }

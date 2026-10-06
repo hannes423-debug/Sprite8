@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeSprite } from '../../src/core/analysis';
 import { createCharacterModel } from '../../src/core/character';
-import { conformToCharacter, consistencyReport, reportStatus, type ConformContext } from '../../src/core/consistency';
+import {
+  conformToCharacter,
+  consistencyReport,
+  reportStatus,
+  type ConformContext,
+} from '../../src/core/consistency';
 import { createWorkingCell, placeOnAnchor } from '../../src/core/project';
 import {
   blit,
@@ -41,8 +46,13 @@ function fakeAiRender(src = sprite): ReturnType<typeof createRaster> {
   const canvas = blit(createRaster(768, 768, C.white), big, 120, 210);
   const r = rng(42);
   for (let i = 0; i < canvas.data.length; i += 4) {
-    if (canvas.data[i] === 255 && canvas.data[i + 1] === 255 && canvas.data[i + 2] === 255) continue;
-    for (let c = 0; c < 3; c++) canvas.data[i + c] = Math.max(0, Math.min(255, canvas.data[i + c] + Math.round((r() - 0.5) * 16)));
+    if (canvas.data[i] === 255 && canvas.data[i + 1] === 255 && canvas.data[i + 2] === 255)
+      continue;
+    for (let c = 0; c < 3; c++)
+      canvas.data[i + c] = Math.max(
+        0,
+        Math.min(255, canvas.data[i + c] + Math.round((r() - 0.5) * 16)),
+      );
   }
   return canvas;
 }
@@ -60,12 +70,18 @@ describe('conform pipeline', () => {
   });
 
   it('keeps colours when the palette is unlocked', () => {
-    const res = conformToCharacter(fakeAiRender(), ctx({ locks: { ...model.locks, palette: false } }));
+    const res = conformToCharacter(
+      fakeAiRender(),
+      ctx({ locks: { ...model.locks, palette: false } }),
+    );
     expect(paletteCoverage(res.image, palette)).toBeLessThan(0.9);
   });
 
   it('can keep the generation scale instead of matching height', () => {
-    const res = conformToCharacter(fakeAiRender(), ctx({ scaleMode: 'generation', generationScale: 5 }));
+    const res = conformToCharacter(
+      fakeAiRender(),
+      ctx({ scaleMode: 'generation', generationScale: 5 }),
+    );
     expect(res.metrics.contentHeight).toBeGreaterThan(sprite.height * 1.8); // ≈ 507 / 5
     expect(res.warnings.join(' ')).toMatch(/clipped/);
   });
@@ -77,11 +93,21 @@ describe('conform pipeline', () => {
 
 describe('consistency report', () => {
   const sourceImage = placeOnAnchor(sprite, cell).image;
-  const base = { direction: 'N' as const, sourceDirection: 'S' as const, sourceImage, cell, character: model, symmetry: 'asymmetric' as const };
+  const base = {
+    direction: 'N' as const,
+    sourceDirection: 'S' as const,
+    sourceImage,
+    cell,
+    character: model,
+    symmetry: 'asymmetric' as const,
+  };
 
   it('accepts a well-formed view', () => {
     const goodBack = placeOnAnchor(flipHorizontal(sprite), cell).image;
-    const checks = consistencyReport({ ...base, frame: { id: 'x', image: goodBack, status: 'ai', origin: null } });
+    const checks = consistencyReport({
+      ...base,
+      frame: { id: 'x', image: goodBack, status: 'ai', origin: null },
+    });
     expect(checks.find((c) => c.id === 'height')?.status).toBe('ok');
     expect(checks.find((c) => c.id === 'ground')?.status).toBe('ok');
     expect(checks.find((c) => c.id === 'palette')?.status).toBe('ok');
@@ -90,9 +116,17 @@ describe('consistency report', () => {
   });
 
   it('flags floating feet, wrong height and mirrored handedness', () => {
-    const small = scaleNearest(sprite, Math.round(sprite.width * 0.7), Math.round(sprite.height * 0.7));
+    const small = scaleNearest(
+      sprite,
+      Math.round(sprite.width * 0.7),
+      Math.round(sprite.height * 0.7),
+    );
     const floating = blit(createRaster(cell.width, cell.height), small, 10, 5);
-    const checks = consistencyReport({ ...base, direction: 'NE', frame: { id: 'x', image: floating, status: 'ai', origin: null } });
+    const checks = consistencyReport({
+      ...base,
+      direction: 'NE',
+      frame: { id: 'x', image: floating, status: 'ai', origin: null },
+    });
     expect(checks.find((c) => c.id === 'height')?.status).toBe('warn');
     expect(checks.find((c) => c.id === 'ground')?.message).toMatch(/float/);
     expect(checks.find((c) => c.id === 'handedness')?.status).toBe('warn');
@@ -100,7 +134,10 @@ describe('consistency report', () => {
   });
 
   it('explains guide-only frames', () => {
-    const checks = consistencyReport({ ...base, frame: { id: 'x', image: null, status: 'guide', origin: null } });
+    const checks = consistencyReport({
+      ...base,
+      frame: { id: 'x', image: null, status: 'guide', origin: null },
+    });
     expect(checks[0].message).toMatch(/Guides only/);
   });
 });

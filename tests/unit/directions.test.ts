@@ -47,12 +47,25 @@ describe('direction system', () => {
 });
 
 describe('sheet layouts', () => {
-  const base: SheetGridSettings = { grid: '8x1', columns: 8, rows: 1, order: [...DIRECTIONS], frameLayout: 'direction-rows' };
+  const base: SheetGridSettings = {
+    grid: '8x1',
+    columns: 8,
+    rows: 1,
+    order: [...DIRECTIONS],
+    frameLayout: 'direction-rows',
+  };
 
   it('8 × 1 keeps the order left to right', () => {
     const p = computePlacements(base, 1);
     expect(p.map((c) => `${c.direction}@${c.col},${c.row}`)).toEqual([
-      'N@0,0', 'NE@1,0', 'E@2,0', 'SE@3,0', 'S@4,0', 'SW@5,0', 'W@6,0', 'NW@7,0',
+      'N@0,0',
+      'NE@1,0',
+      'E@2,0',
+      'SE@3,0',
+      'S@4,0',
+      'SW@5,0',
+      'W@6,0',
+      'NW@7,0',
     ]);
   });
 
@@ -73,7 +86,10 @@ describe('sheet layouts', () => {
   });
 
   it('custom grids always have room for eight cells', () => {
-    expect(gridDimensions({ ...base, grid: 'custom', columns: 3, rows: 1 }, 1)).toEqual({ columns: 3, rows: 3 });
+    expect(gridDimensions({ ...base, grid: 'custom', columns: 3, rows: 1 }, 1)).toEqual({
+      columns: 3,
+      rows: 3,
+    });
   });
 
   it('multi-frame animations use one row per direction', () => {
@@ -82,14 +98,29 @@ describe('sheet layouts', () => {
     expect(gridDimensions(base, 3)).toEqual({ columns: 3, rows: 8 });
     expect(p.find((c) => c.direction === 'E' && c.frame === 2)).toMatchObject({ col: 2, row: 2 });
     const cols = computePlacements({ ...base, frameLayout: 'direction-columns' }, 3);
-    expect(cols.find((c) => c.direction === 'E' && c.frame === 2)).toMatchObject({ col: 2, row: 2 });
-    expect(cols.find((c) => c.direction === 'NW' && c.frame === 1)).toMatchObject({ col: 7, row: 1 });
+    expect(cols.find((c) => c.direction === 'E' && c.frame === 2)).toMatchObject({
+      col: 2,
+      row: 2,
+    });
+    expect(cols.find((c) => c.direction === 'NW' && c.frame === 1)).toMatchObject({
+      col: 7,
+      row: 1,
+    });
   });
 
   it('honours custom orders and repairs invalid ones', () => {
     const order = ORDER_PRESETS[1].order;
     expect(computePlacements({ ...base, order }, 1)[0].direction).toBe('S');
     expect(matchOrderPreset(order)).toBe('clockwise-s');
-    expect(normalizeOrder(['S', 'S', 'bogus', 'N'])).toEqual(['S', 'N', 'NE', 'E', 'SE', 'SW', 'W', 'NW']);
+    expect(normalizeOrder(['S', 'S', 'bogus', 'N'])).toEqual([
+      'S',
+      'N',
+      'NE',
+      'E',
+      'SE',
+      'SW',
+      'W',
+      'NW',
+    ]);
   });
 });

@@ -1,6 +1,12 @@
 import { DIRECTIONS, type Direction } from '../directions';
 import type { RasterImage } from '../sprite';
-import { ANIMATION_KIND_LABELS, type Animation, type AnimationKind, type DirectionTrack, type Frame } from './types';
+import {
+  ANIMATION_KIND_LABELS,
+  type Animation,
+  type AnimationKind,
+  type DirectionTrack,
+  type Frame,
+} from './types';
 
 let frameCounter = 0;
 
@@ -41,7 +47,12 @@ export function getFrame(anim: Animation, direction: Direction, frame: number): 
 }
 
 /** Immutable update of one frame — every other frame keeps its identity. */
-export function setFrame(anim: Animation, direction: Direction, frame: number, value: Frame): Animation {
+export function setFrame(
+  anim: Animation,
+  direction: Direction,
+  frame: number,
+  value: Frame,
+): Animation {
   const track = anim.tracks[direction];
   if (frame < 0 || frame >= track.frames.length) throw new Error(`Frame ${frame} out of range`);
   const frames = track.frames.slice();
@@ -78,9 +89,15 @@ export function insertFrame(anim: Animation, index: number, duplicate: boolean):
   for (const direction of DIRECTIONS) {
     const track = anim.tracks[direction];
     const src = track.frames[Math.max(0, Math.min(index, track.frames.length - 1))];
-    const copy: Frame = duplicate && src
-      ? { ...src, id: newFrameId(), status: src.image ? 'edited' : 'empty', origin: src.origin ? { ...src.origin } : null }
-      : emptyFrame();
+    const copy: Frame =
+      duplicate && src
+        ? {
+            ...src,
+            id: newFrameId(),
+            status: src.image ? 'edited' : 'empty',
+            origin: src.origin ? { ...src.origin } : null,
+          }
+        : emptyFrame();
     const frames = track.frames.slice();
     frames.splice(index + 1, 0, copy);
     tracks[direction] = { ...track, frames };

@@ -75,7 +75,8 @@ export function estimateProportions(sprite: RasterImage): ProportionEstimate {
 
   // Legs: rows in the lower body that split into two or more runs.
   const split = new Uint8Array(h);
-  for (let y = clampRow(0.4); y <= clampRow(0.95); y++) split[y] = runsInRow(sprite, y, 1) >= 2 ? 1 : 0;
+  for (let y = clampRow(0.4); y <= clampRow(0.95); y++)
+    split[y] = runsInRow(sprite, y, 1) >= 2 ? 1 : 0;
   let lowerRows = 0;
   let splitRows = 0;
   for (let y = clampRow(0.65); y <= clampRow(0.95); y++) {
@@ -103,7 +104,10 @@ export function estimateProportions(sprite: RasterImage): ProportionEstimate {
 
   const neckY = neckDetected ? neckRow / h : fallback.neckY;
   const shoulderY = neckDetected ? Math.max(neckY + 0.01, shoulderRow / h) : neckY + 0.05;
-  const hipY = crotchRow !== null ? Math.max(shoulderY + 0.05, crotchRow / h - 0.03) : neckY + (1 - neckY) * 0.45;
+  const hipY =
+    crotchRow !== null
+      ? Math.max(shoulderY + 0.05, crotchRow / h - 0.03)
+      : neckY + (1 - neckY) * 0.45;
   const kneeY = hipY + (1 - hipY) * 0.5;
   return {
     heightPx: h,
@@ -131,11 +135,19 @@ function rowsBounds(sprite: RasterImage, y0: number, y1: number): Rect | null {
     }
   }
   if (maxX < 0) return null;
-  return { x: minX, y: Math.max(0, y0), width: maxX - minX + 1, height: Math.min(sprite.height, y1) - Math.max(0, y0) };
+  return {
+    x: minX,
+    y: Math.max(0, y0),
+    width: maxX - minX + 1,
+    height: Math.min(sprite.height, y1) - Math.max(0, y0),
+  };
 }
 
 /** Rough body-part regions (head, torso, legs, feet) from the landmarks. */
-export function estimateAnatomy(sprite: RasterImage, p: Proportions): Record<AnatomyPart, BodyPart> {
+export function estimateAnatomy(
+  sprite: RasterImage,
+  p: Proportions,
+): Record<AnatomyPart, BodyPart> {
   const h = sprite.height;
   const row = (f: number) => Math.round(f * h);
   const feetTop = Math.max(row(p.kneeY) + 1, h - Math.max(1, Math.round(h * 0.08)));

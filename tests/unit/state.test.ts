@@ -62,7 +62,10 @@ describe('animation model', () => {
   });
 
   it('plays frames over time', () => {
-    const anim = { ...insertFrame(insertFrame(createAnimation('walk'), 0, false), 0, false), fps: 10 };
+    const anim = {
+      ...insertFrame(insertFrame(createAnimation('walk'), 0, false), 0, false),
+      fps: 10,
+    };
     expect(frameAtTime(anim, 0)).toBe(0);
     expect(frameAtTime(anim, 150)).toBe(1);
     expect(frameAtTime(anim, 350)).toBe(0); // loops
@@ -89,7 +92,17 @@ describe('project', () => {
 
   it('moves the source to a new direction without losing other work', () => {
     let p = projectWithSource(createEmptyProject(), imported, 'a.png');
-    p = replaceAnimation(p, updateFrameImage(activeAnimation(p), 'N', 0, createRaster(p.cell.width, p.cell.height), 'edited', null));
+    p = replaceAnimation(
+      p,
+      updateFrameImage(
+        activeAnimation(p),
+        'N',
+        0,
+        createRaster(p.cell.width, p.cell.height),
+        'edited',
+        null,
+      ),
+    );
     const moved = moveSourceDirection(p, 'E');
     const anim = activeAnimation(moved);
     expect(moved.setup.sourceDirection).toBe('E');
@@ -126,7 +139,8 @@ describe('history', () => {
 
   it('prunes old entries over the memory budget', () => {
     let h = EMPTY_HISTORY;
-    for (let i = 1; i <= 10; i++) h = pushHistory(h, doc(32), `step ${i}`, { maxEntries: 100, maxBytes: 32 * 32 * 4 * 3 });
+    for (let i = 1; i <= 10; i++)
+      h = pushHistory(h, doc(32), `step ${i}`, { maxEntries: 100, maxBytes: 32 * 32 * 4 * 3 });
     expect(h.past.length).toBe(3);
     expect(historyBytes(h)).toBeLessThanOrEqual(32 * 32 * 4 * 3);
     expect(h.past.at(-1)!.label).toBe('step 10');
@@ -135,7 +149,10 @@ describe('history', () => {
   it('finds which frames changed', () => {
     const a = doc(1);
     const anim = a.animations[0];
-    const b = { ...a, animations: [updateFrameImage(anim, 'SE', 0, createRaster(1, 1), 'ai', null)] };
+    const b = {
+      ...a,
+      animations: [updateFrameImage(anim, 'SE', 0, createRaster(1, 1), 'ai', null)],
+    };
     expect(changedFrames(a, b)).toEqual([{ animationId: 'idle', direction: 'SE', frame: 0 }]);
   });
 });
@@ -143,7 +160,10 @@ describe('history', () => {
 describe('storage', () => {
   it('saves and loads settings with defaults for missing keys', () => {
     const mem = new Map<string, string>();
-    const store: KeyValueStore = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => void mem.set(k, v) };
+    const store: KeyValueStore = {
+      getItem: (k) => mem.get(k) ?? null,
+      setItem: (k, v) => void mem.set(k, v),
+    };
     expect(loadSettings(store)).toEqual(defaultAppSettings());
     const s = defaultAppSettings();
     s.providerId = 'comfyui';
@@ -174,11 +194,20 @@ describe('storage', () => {
   });
 
   it('rejects foreign files and fills defaults for old projects', async () => {
-    await expect(deserializeProject('{"format":"other"}', nodeCodec)).rejects.toThrow(/not a Sprite8 project/);
-    const old = normalizeProject({ format: 'sprite8-project', version: 1, setup: { name: 'x' }, sheet: { padding: 9 } });
+    await expect(deserializeProject('{"format":"other"}', nodeCodec)).rejects.toThrow(
+      /not a Sprite8 project/,
+    );
+    const old = normalizeProject({
+      format: 'sprite8-project',
+      version: 1,
+      setup: { name: 'x' },
+      sheet: { padding: 9 },
+    });
     expect(old.sheet.padding).toBe(9);
     expect(old.sheet.exportScale).toBe(1);
     expect(old.setup.symmetry).toBe('asymmetric');
-    expect(() => normalizeProject({ format: 'sprite8-project', version: 99 })).toThrow(/newer Sprite8/);
+    expect(() => normalizeProject({ format: 'sprite8-project', version: 99 })).toThrow(
+      /newer Sprite8/,
+    );
   });
 });

@@ -17,7 +17,12 @@ export function silhouetteMask(img: RasterImage, alphaThreshold = 127): Uint8Arr
   return mask;
 }
 
-export function maskToRaster(mask: Uint8Array, width: number, height: number, color: Rgba): RasterImage {
+export function maskToRaster(
+  mask: Uint8Array,
+  width: number,
+  height: number,
+  color: Rgba,
+): RasterImage {
   const out = createRaster(width, height);
   for (let p = 0; p < mask.length; p++) {
     if (!mask[p]) continue;
@@ -41,7 +46,10 @@ export interface SilhouetteGuideSource {
 }
 
 /** Which existing view can provide an outline guide for `direction`, if any. */
-export function silhouetteGuideSource(direction: Direction, available: ReadonlySet<Direction>): SilhouetteGuideSource | null {
+export function silhouetteGuideSource(
+  direction: Direction,
+  available: ReadonlySet<Direction>,
+): SilhouetteGuideSource | null {
   const from = oppositeDirection(direction);
   if (!available.has(from)) return null;
   return {

@@ -14,12 +14,28 @@ export function Button(props: {
   busy?: boolean;
   type?: 'button' | 'submit';
 }) {
-  const cls = ['btn', props.variant && props.variant !== 'secondary' ? props.variant : '', props.size && props.size !== 'normal' ? props.size : '', props.block ? 'block' : '']
+  const cls = [
+    'btn',
+    props.variant && props.variant !== 'secondary' ? props.variant : '',
+    props.size && props.size !== 'normal' ? props.size : '',
+    props.block ? 'block' : '',
+  ]
     .filter(Boolean)
     .join(' ');
   return (
-    <button type={props.type ?? 'button'} className={cls} disabled={props.disabled || props.busy} title={props.title} onClick={props.onClick} data-testid={props.testId}>
-      {props.busy ? <span className="spinner" /> : props.icon ? <Icon name={props.icon} size={props.size === 'small' ? 15 : 17} /> : null}
+    <button
+      type={props.type ?? 'button'}
+      className={cls}
+      disabled={props.disabled || props.busy}
+      title={props.title}
+      onClick={props.onClick}
+      data-testid={props.testId}
+    >
+      {props.busy ? (
+        <span className="spinner" />
+      ) : props.icon ? (
+        <Icon name={props.icon} size={props.size === 'small' ? 15 : 17} />
+      ) : null}
       {props.children}
     </button>
   );
@@ -33,11 +49,12 @@ export function IconButton(props: {
   disabled?: boolean;
   testId?: string;
   size?: number;
+  className?: string;
 }) {
   return (
     <button
       type="button"
-      className={`icon-btn${props.active ? ' active' : ''}`}
+      className={`icon-btn${props.active ? ' active' : ''}${props.className ? ` ${props.className}` : ''}`}
       title={props.label}
       aria-label={props.label}
       aria-pressed={props.active === undefined ? undefined : props.active}
@@ -76,17 +93,34 @@ export function Segmented<T extends string>(props: {
   );
 }
 
-export function Toggle(props: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode; disabled?: boolean; testId?: string; title?: string }) {
+export function Toggle(props: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: ReactNode;
+  disabled?: boolean;
+  testId?: string;
+  title?: string;
+}) {
   return (
     <label className="toggle" title={props.title}>
-      <input type="checkbox" checked={props.checked} disabled={props.disabled} onChange={(e) => props.onChange(e.target.checked)} data-testid={props.testId} />
+      <input
+        type="checkbox"
+        checked={props.checked}
+        disabled={props.disabled}
+        onChange={(e) => props.onChange(e.target.checked)}
+        data-testid={props.testId}
+      />
       <span className="track" />
       <span>{props.label}</span>
     </label>
   );
 }
 
-export function Field(props: { label: ReactNode; help?: ReactNode; children: (id: string) => ReactNode }) {
+export function Field(props: {
+  label: ReactNode;
+  help?: ReactNode;
+  children: (id: string) => ReactNode;
+}) {
   const id = useId();
   return (
     <div className="field">
@@ -106,7 +140,14 @@ export function Select<T extends string>(props: {
   ariaLabel?: string;
 }) {
   return (
-    <select id={props.id} className="input" value={props.value} onChange={(e) => props.onChange(e.target.value as T)} data-testid={props.testId} aria-label={props.ariaLabel}>
+    <select
+      id={props.id}
+      className="input"
+      value={props.value}
+      onChange={(e) => props.onChange(e.target.value as T)}
+      data-testid={props.testId}
+      aria-label={props.ariaLabel}
+    >
       {props.options.map((o) => (
         <option key={o.value} value={o.value}>
           {o.label}
@@ -149,7 +190,11 @@ export function NumberInput(props: {
   );
 }
 
-export function Notice(props: { kind?: 'info' | 'warn' | 'ok'; children: ReactNode; testId?: string }) {
+export function Notice(props: {
+  kind?: 'info' | 'warn' | 'ok';
+  children: ReactNode;
+  testId?: string;
+}) {
   const kind = props.kind ?? 'info';
   return (
     <div className={`notice ${kind}`} data-testid={props.testId}>
@@ -159,7 +204,12 @@ export function Notice(props: { kind?: 'info' | 'warn' | 'ok'; children: ReactNo
   );
 }
 
-export function Disclosure(props: { summary: ReactNode; children: ReactNode; defaultOpen?: boolean; testId?: string }) {
+export function Disclosure(props: {
+  summary: ReactNode;
+  children: ReactNode;
+  defaultOpen?: boolean;
+  testId?: string;
+}) {
   return (
     <details className="disclosure" open={props.defaultOpen} data-testid={props.testId}>
       <summary>{props.summary}</summary>

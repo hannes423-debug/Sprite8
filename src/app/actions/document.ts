@@ -1,4 +1,11 @@
-import { changedFrames, pushHistory, redoHistory, undoHistory, type DocState, type Project } from '../../core/project';
+import {
+  changedFrames,
+  pushHistory,
+  redoHistory,
+  undoHistory,
+  type DocState,
+  type Project,
+} from '../../core/project';
 import { getState, setUi, store } from '../store';
 import { toast } from './ui';
 
@@ -46,7 +53,11 @@ export function pushUndoPoint(label: string): () => void {
   return () => {
     const s = getState();
     if (s.project.animations !== before || s.project.cell !== beforeCell) return;
-    if (s.history.past.at(-1) === entry) store.setState((st) => ({ ...st, history: { ...st.history, past: st.history.past.slice(0, -1) } }));
+    if (s.history.past.at(-1) === entry)
+      store.setState((st) => ({
+        ...st,
+        history: { ...st.history, past: st.history.past.slice(0, -1) },
+      }));
   };
 }
 
@@ -61,7 +72,12 @@ function restore(kind: 'undo' | 'redo'): void {
   const changed = changedFrames(current, res.doc);
   store.setState((st) => ({
     ...st,
-    project: { ...st.project, cell: res.doc.cell, animations: res.doc.animations, updatedAt: Date.now() },
+    project: {
+      ...st.project,
+      cell: res.doc.cell,
+      animations: res.doc.animations,
+      updatedAt: Date.now(),
+    },
     history: res.history,
   }));
   if (changed.length === 1) setUi({ selected: changed[0].direction });

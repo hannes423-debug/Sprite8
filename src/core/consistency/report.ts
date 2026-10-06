@@ -3,7 +3,14 @@ import { checkHandedness } from '../asymmetry';
 import type { CharacterModel, SymmetryMode } from '../character/model';
 import type { Direction } from '../directions';
 import type { WorkingCell } from '../project/project';
-import { findFeet, hexToRgba, paletteCoverage, rgbDistance, type RasterImage, type Rgba } from '../sprite';
+import {
+  findFeet,
+  hexToRgba,
+  paletteCoverage,
+  rgbDistance,
+  type RasterImage,
+  type Rgba,
+} from '../sprite';
 import { MIRROR_CAVEATS } from '../symmetry';
 
 export type CheckStatus = 'ok' | 'warn' | 'info';
@@ -60,7 +67,12 @@ export function consistencyReport(input: ReportInput): ConsistencyCheck[] {
   }
   const feet = findFeet(img);
   if (!feet) {
-    checks.push({ id: 'content', label: 'Content', status: 'warn', message: 'This view is empty.' });
+    checks.push({
+      id: 'content',
+      label: 'Content',
+      status: 'warn',
+      message: 'This view is empty.',
+    });
     return checks;
   }
   const ref = input.sourceImage ? findFeet(input.sourceImage) : null;
@@ -91,9 +103,16 @@ export function consistencyReport(input: ReportInput): ConsistencyCheck[] {
     id: 'centre',
     label: 'Centring',
     status: Math.abs(centreOff) <= 2 ? 'ok' : 'warn',
-    message: Math.abs(centreOff) <= 2 ? 'Feet are centred on the anchor.' : `Feet are ${Math.abs(centreOff)}px ${centreOff > 0 ? 'right' : 'left'} of the anchor.`,
+    message:
+      Math.abs(centreOff) <= 2
+        ? 'Feet are centred on the anchor.'
+        : `Feet are ${Math.abs(centreOff)}px ${centreOff > 0 ? 'right' : 'left'} of the anchor.`,
   });
-  if (character && character.colors.palette.length && (character.locks.palette || character.style.pixelArt)) {
+  if (
+    character &&
+    character.colors.palette.length &&
+    (character.locks.palette || character.style.pixelArt)
+  ) {
     const palette = character.colors.palette.map((h) => hexToRgba(h)).filter((c): c is Rgba => !!c);
     const coverage = paletteCoverage(img, palette);
     checks.push({
@@ -122,7 +141,11 @@ export function consistencyReport(input: ReportInput): ConsistencyCheck[] {
         : 'Main colours of the source are present.',
     });
   }
-  if (input.symmetry === 'asymmetric' && input.sourceImage && input.direction !== input.sourceDirection) {
+  if (
+    input.symmetry === 'asymmetric' &&
+    input.sourceImage &&
+    input.direction !== input.sourceDirection
+  ) {
     const h = checkHandedness({
       source: input.sourceImage,
       sourceDirection: input.sourceDirection,

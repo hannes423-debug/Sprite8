@@ -1,5 +1,10 @@
 import { mirroredDirection } from '../directions';
-import { isMirrorDerivable, mirrorFrame, mirrorShortcutAllowed, silhouetteGuideSource } from '../symmetry';
+import {
+  isMirrorDerivable,
+  mirrorFrame,
+  mirrorShortcutAllowed,
+  silhouetteGuideSource,
+} from '../symmetry';
 import {
   ProviderError,
   type DirectionResult,
@@ -27,7 +32,13 @@ export const guidesProvider: ImageGenerationProvider = {
   kind: 'deterministic',
   description:
     'Deterministic, offline and free. Places the source, mirrors partner views for symmetric characters (only when you enable the shortcut) and shows construction guides for the rest. It never pretends to reconstruct unseen sides — draw them in the editor, import images, or connect an AI provider.',
-  capabilities: { generatesNewViews: false, variations: false, analysis: false, references: false, seeds: false },
+  capabilities: {
+    generatesNewViews: false,
+    variations: false,
+    analysis: false,
+    references: false,
+    seeds: false,
+  },
   settingsFields: [],
 
   async checkStatus() {
@@ -45,7 +56,10 @@ export const guidesProvider: ImageGenerationProvider = {
       const src = byDir.get(direction);
       return { kind: 'source', image: src?.image ?? null };
     }
-    if (mirrorShortcutAllowed(character.symmetry, req.options.symmetryShortcut) && isMirrorDerivable(direction)) {
+    if (
+      mirrorShortcutAllowed(character.symmetry, req.options.symmetryShortcut) &&
+      isMirrorDerivable(direction)
+    ) {
       const partner = mirroredDirection(direction);
       const view = byDir.get(partner);
       if (view && USABLE.has(view.status)) {
@@ -64,12 +78,17 @@ export const guidesProvider: ImageGenerationProvider = {
     ];
     if (silhouette) notes.push(silhouette.reason);
     if (character.symmetry === 'asymmetric') {
-      notes.push('Asymmetric character: mirroring is disabled so handedness and one-sided details stay correct.');
+      notes.push(
+        'Asymmetric character: mirroring is disabled so handedness and one-sided details stay correct.',
+      );
     }
     return { kind: 'guide', image: null, notes };
   },
 
   async generateVariation() {
-    throw new ProviderError('Variations need an AI provider.', 'Choose ComfyUI, Stable Diffusion WebUI or a custom server in the provider settings.');
+    throw new ProviderError(
+      'Variations need an AI provider.',
+      'Choose ComfyUI, Stable Diffusion WebUI or a custom server in the provider settings.',
+    );
   },
 };

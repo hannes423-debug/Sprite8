@@ -61,7 +61,9 @@ export async function fetchChecked(
     if (e?.name === 'AbortError' || e?.name === 'TimeoutError') {
       throw new ProviderError(
         e.name === 'TimeoutError' ? `${what} timed out.` : `${what} was cancelled.`,
-        e.name === 'TimeoutError' ? 'Increase the timeout in the provider settings or use a faster model.' : undefined,
+        e.name === 'TimeoutError'
+          ? 'Increase the timeout in the provider settings or use a faster model.'
+          : undefined,
       );
     }
     throw new ProviderError(
@@ -76,7 +78,9 @@ export async function fetchChecked(
     } catch {
       /* ignore */
     }
-    throw new ProviderError(`${what} failed: HTTP ${res.status} ${res.statusText}${body ? ` — ${body}` : ''}`);
+    throw new ProviderError(
+      `${what} failed: HTTP ${res.status} ${res.statusText}${body ? ` — ${body}` : ''}`,
+    );
   }
   return res;
 }
