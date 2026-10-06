@@ -35,7 +35,8 @@ export interface SpriteAnalysis {
   outline: { detected: boolean; color: string | null; thickness: number; share: number };
   shading: Detected<ShadingStyle>;
   artStyle: Detected<ArtStyle>;
-  symmetry: SymmetryScore;
+  /** Image symmetry plus a verdict that also accounts for one-sided equipment. */
+  symmetry: SymmetryScore & { reason: string };
   proportions: ProportionEstimate;
   characterType: Detected<CharacterType>;
   handedness: HandednessGuess;
@@ -123,16 +124,34 @@ export function analyzeSprite(sprite: RasterImage, opts: AnalyzeOptions): Sprite
     : uniqueColors <= 64
       ? { value: 'cartoon', confidence: 0.35, reason: 'Few flat colours.' }
       : { value: 'painted', confidence: 0.35, reason: 'Many colours / soft shading.' };
-  const symmetry = symmetryScore(sprite);
+  const rawSymmetry = symmetryScore(sprite);
   const proportions = estimateProportions(sprite);
   const characterType = guessCharacterType(proportions);
   const handedness = guessHandedness(sprite, opts.sourceDirection);
   const extent = extentAsymmetry(sprite);
+  // Thin one-sided items (sticks, spears) hardly change the pixel-area score
+  // but make a character asymmetric, so the silhouette's reach counts too.
+  const oneSided = !!extent && Math.abs(extent.ratio) >= 0.25;
+  const symmetry: SpriteAnalysis['symmetry'] = oneSided
+    ? {
+        ...rawSymmetry,
+        verdict: 'asymmetric',
+        reason: `The silhouette reaches ${Math.round(Math.abs(extent!.ratio) * 100)}% further to one side (one-sided equipment?).`,
+      }
+    : {
+        ...rawSymmetry,
+        reason:
+          rawSymmetry.verdict === 'symmetric'
+            ? 'Left and right halves of the image match.'
+            : rawSymmetry.verdict === 'asymmetric'
+              ? 'Left and right halves of the image differ.'
+              : 'Left and right halves are similar but not identical.',
+      };
 
   let sourceDirectionHint: SpriteAnalysis['sourceDirectionHint'];
-  if (symmetry.score >= 0.88) {
+  if (rawSymmetry.score >= 0.88 && !oneSided) {
     sourceDirectionHint = { candidates: ['S', 'N'], reason: 'The image is mirror-symmetric, typical of a front (S) or back (N) view.' };
-  } else if (symmetry.maskScore < 0.6) {
+  } else if (rawSymmetry.maskScore < 0.6 || oneSided) {
     sourceDirectionHint = {
       candidates: [],
       reason: 'The silhouette is strongly one-sided: a profile/diagonal view or a character with one-sided equipment.',

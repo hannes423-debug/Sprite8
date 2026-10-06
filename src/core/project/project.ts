@@ -71,6 +71,8 @@ export interface GenerationSettings {
   extraPrompt: string;
   extraNegative: string;
   generationSize: number;
+  /** 0…1 — how far a variation may move away from the current view. */
+  variationStrength: number;
   scaleMode: 'height' | 'generation' | 'off';
 }
 
@@ -124,6 +126,7 @@ export function defaultGenerationSettings(): GenerationSettings {
     extraPrompt: '',
     extraNegative: '',
     generationSize: 768,
+    variationStrength: 0.45,
     scaleMode: 'height',
   };
 }

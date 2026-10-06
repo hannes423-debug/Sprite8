@@ -146,7 +146,7 @@ export function describeColor(c: { r: number; g: number; b: number }): string {
     return 'light gray';
   }
   // Warm, light, moderately saturated colours read as skin tones.
-  if (h >= 10 && h < 45 && l > 0.55 && l < 0.88 && s > 0.2 && s < 0.75) return 'skin tone';
+  if (h >= 10 && h < 45 && l > 0.55 && l < 0.88 && s > 0.2 && s <= 0.9) return 'skin tone';
   if (h >= 8 && h < 48 && l < 0.45) return l < 0.22 ? 'dark brown' : 'brown';
   let name: string;
   if (h < 12 || h >= 345) name = 'red';

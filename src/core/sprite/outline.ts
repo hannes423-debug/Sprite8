@@ -56,7 +56,16 @@ export function detectOutline(img: RasterImage): OutlineInfo {
   }
   const color = unpackRgba(bestKey);
   const share = bestN / total;
-  const detected = share >= 0.45 && luma(color) < 0.45;
+  // An outline is a genuinely dark colour, clearly darker than the fill.
+  let interiorLuma = 0;
+  let interiorN = 0;
+  for (let p = 0; p < mask.length; p++) {
+    if (mask[p] || img.data[p * 4 + 3] < OPAQUE) continue;
+    interiorLuma += luma({ r: img.data[p * 4], g: img.data[p * 4 + 1], b: img.data[p * 4 + 2] });
+    interiorN++;
+  }
+  const fillLuma = interiorN ? interiorLuma / interiorN : 1;
+  const detected = share >= 0.6 && luma(color) < 0.3 && luma(color) < fillLuma - 0.1;
   if (!detected) return { detected: false, color, share, thickness: 0 };
   // Second ring: opaque pixels adjacent to the boundary but not on it.
   let ring2 = 0;

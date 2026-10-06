@@ -1,0 +1,53 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "{{CHECKPOINT}}" },
+    "_meta": { "title": "Load checkpoint" }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": { "image": "{{SOURCE_IMAGE}}" },
+    "_meta": { "title": "Sprite8 source view" }
+  },
+  "3": {
+    "class_type": "VAEEncode",
+    "inputs": { "pixels": ["2", 0], "vae": ["1", 2] },
+    "_meta": { "title": "Encode source" }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{PROMPT}}", "clip": ["1", 1] },
+    "_meta": { "title": "Direction prompt" }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{NEGATIVE_PROMPT}}", "clip": ["1", 1] },
+    "_meta": { "title": "Negative prompt" }
+  },
+  "6": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "positive": ["4", 0],
+      "negative": ["5", 0],
+      "latent_image": ["3", 0],
+      "seed": "{{SEED}}",
+      "steps": "{{STEPS}}",
+      "cfg": "{{CFG}}",
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": "{{DENOISE}}"
+    },
+    "_meta": { "title": "Sampler" }
+  },
+  "7": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["6", 0], "vae": ["1", 2] },
+    "_meta": { "title": "Decode" }
+  },
+  "8": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["7", 0], "filename_prefix": "sprite8_{{DIRECTION}}" },
+    "_meta": { "title": "Sprite8 output" }
+  }
+}

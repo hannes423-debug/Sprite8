@@ -164,9 +164,10 @@ export function removeBackground(img: RasterImage, opts: RemoveBackgroundOptions
 }
 
 /**
- * Edge pixels of painted art are blends of foreground and background. For the
- * two pixel rings next to the removed area we estimate a partial alpha from the
- * distance to the background and remove the background's colour contribution.
+ * Edge pixels of painted art are blends of foreground and background:
+ * p = α·f + (1−α)·bg. For the two pixel rings next to the removed area we
+ * take the most foreground-like interior neighbour as f, project p onto the
+ * bg→f line to estimate α, and remove the background's contribution.
  */
 function defringeInPlace(img: RasterImage, removed: Uint8Array, bg: Rgba, tolerance: number): void {
   const { width, height, data: d } = img;
@@ -190,17 +191,48 @@ function defringeInPlace(img: RasterImage, removed: Uint8Array, bg: Rgba, tolera
     if (removed[p] || ring[p] || d[p * 4 + 3] === 0) continue;
     if (neighbours(p, (n) => ring[n] === 1)) ring[p] = 2;
   }
+  const original = new Uint8ClampedArray(d);
+  const bgv = [bg.r, bg.g, bg.b];
   for (let p = 0; p < ring.length; p++) {
     if (!ring[p]) continue;
     const i = p * 4;
-    const dist = Math.hypot(d[i] - bg.r, d[i + 1] - bg.g, d[i + 2] - bg.b);
-    const limit = ring[p] === 1 ? range : range / 2;
-    if (dist >= limit) continue;
-    const alpha = Math.max(0.08, Math.min(1, (dist - tolerance * 0.5) / (limit - tolerance * 0.5)));
-    for (let c = 0; c < 3; c++) {
-      const bgc = c === 0 ? bg.r : c === 1 ? bg.g : bg.b;
-      d[i + c] = Math.max(0, Math.min(255, Math.round((d[i + c] - (1 - alpha) * bgc) / alpha)));
+    const px = p % width;
+    const py = (p - px) / width;
+    // Most foreground-like interior neighbour within radius 2.
+    let fg: number[] | null = null;
+    let fgDist = 0;
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        const nx = px + dx;
+        const ny = py + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const n = ny * width + nx;
+        if (removed[n] || ring[n] || original[n * 4 + 3] === 0) continue;
+        const c = [original[n * 4], original[n * 4 + 1], original[n * 4 + 2]];
+        const dist = Math.hypot(c[0] - bgv[0], c[1] - bgv[1], c[2] - bgv[2]);
+        if (dist > fgDist) {
+          fgDist = dist;
+          fg = c;
+        }
+      }
     }
-    d[i + 3] = Math.round(d[i + 3] * alpha);
+    const pv = [original[i], original[i + 1], original[i + 2]];
+    let alpha: number;
+    if (fg && fgDist > tolerance) {
+      // Projection of (p − bg) onto (f − bg).
+      let dot = 0;
+      for (let c = 0; c < 3; c++) dot += (pv[c] - bgv[c]) * (fg[c] - bgv[c]);
+      alpha = dot / (fgDist * fgDist);
+    } else {
+      const dist = Math.hypot(pv[0] - bgv[0], pv[1] - bgv[1], pv[2] - bgv[2]);
+      const limit = ring[p] === 1 ? range : range / 2;
+      alpha = (dist - tolerance * 0.5) / (limit - tolerance * 0.5);
+    }
+    alpha = Math.max(0.06, Math.min(1, alpha));
+    if (alpha > 0.97) continue;
+    for (let c = 0; c < 3; c++) {
+      d[i + c] = Math.max(0, Math.min(255, Math.round((pv[c] - (1 - alpha) * bgv[c]) / alpha)));
+    }
+    d[i + 3] = Math.round(original[i + 3] * alpha);
   }
 }

@@ -21,12 +21,6 @@ function smooth(values: Int32Array, radius: number): Float64Array {
   return out;
 }
 
-function argMin(v: Float64Array, from: number, to: number): number {
-  let best = from;
-  for (let i = from; i <= to; i++) if (v[i] < v[best]) best = i;
-  return best;
-}
-
 function argMax(v: Float64Array, from: number, to: number): number {
   let best = from;
   for (let i = from; i <= to; i++) if (v[i] > v[best]) best = i;
@@ -54,14 +48,30 @@ export function estimateProportions(sprite: RasterImage): ProportionEstimate {
     legsSeparated: false,
   };
   if (h < 8 || w < 3) return fallback;
-  const profile = smooth(rowCoverage(sprite), Math.max(1, Math.round(h * 0.02)));
+  // Smooth only larger (painted) sprites; in pixel art a 1–2 row neck is real.
+  const profile = smooth(rowCoverage(sprite), h >= 100 ? Math.round(h * 0.015) : 0);
   const clampRow = (f: number) => Math.max(0, Math.min(h - 1, Math.round(f * (h - 1))));
 
-  const headMaxRow = argMax(profile, 0, clampRow(0.3));
-  const neckRow = argMin(profile, Math.max(headMaxRow, clampRow(0.08)), clampRow(0.45));
-  const shoulderRow = argMax(profile, neckRow, Math.min(h - 1, neckRow + Math.max(1, Math.round(h * 0.2))));
-  const neckDetected =
-    neckRow > headMaxRow && profile[neckRow] <= profile[headMaxRow] * 0.85 && profile[shoulderRow] >= profile[neckRow] * 1.1;
+  // Neck: scanning down, the first clear narrowing (≤ 80% of the widest row
+  // above it) that widens again into shoulders.
+  let neckRow = -1;
+  let shoulderRow = -1;
+  let headMax = 0;
+  for (let y = 0; y <= clampRow(0.45) && neckRow < 0; y++) {
+    headMax = Math.max(headMax, profile[y]);
+    if (y < clampRow(0.06) || profile[y] > headMax * 0.8) continue;
+    let ny = y;
+    while (ny + 1 < h && profile[ny + 1] <= profile[ny]) ny++;
+    const lookEnd = Math.min(h - 1, ny + Math.max(2, Math.round(h * 0.25)));
+    const widest = argMax(profile, ny, lookEnd);
+    if (profile[widest] >= profile[ny] * 1.15 && ny <= clampRow(0.5)) {
+      neckRow = ny;
+      shoulderRow = widest;
+    } else {
+      y = ny;
+    }
+  }
+  const neckDetected = neckRow > 0;
 
   // Legs: rows in the lower body that split into two or more runs.
   const split = new Uint8Array(h);
@@ -84,7 +94,7 @@ export function estimateProportions(sprite: RasterImage): ProportionEstimate {
       splitFrom[y] = suffix / (end - y + 1);
     }
     for (let y = clampRow(0.4); y <= clampRow(0.85); y++) {
-      if (splitFrom[y] >= 0.8) {
+      if (split[y] && splitFrom[y] >= 0.8) {
         crotchRow = y;
         break;
       }

@@ -13,12 +13,12 @@ export function emptyFrame(): Frame {
   return { id: newFrameId(), image: null, status: 'empty', origin: null };
 }
 
-export function createAnimation(kind: AnimationKind = 'idle', frameCount = 1, id?: string): Animation {
+export function createAnimation(kind: AnimationKind = 'idle', frames = 1, id?: string): Animation {
   const tracks = {} as Record<Direction, DirectionTrack>;
   for (const direction of DIRECTIONS) {
     tracks[direction] = {
       direction,
-      frames: Array.from({ length: Math.max(1, frameCount) }, () => emptyFrame()),
+      frames: Array.from({ length: Math.max(1, frames) }, () => emptyFrame()),
       locked: false,
     };
   }
