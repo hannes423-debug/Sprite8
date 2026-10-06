@@ -72,6 +72,9 @@ export function EditorStage({ ctl }: { ctl: EditorController }) {
       ref={ref}
       className="editor-canvas"
       data-testid="editor-canvas"
+      data-zoom={ctl.view.zoom}
+      data-pan-x={ctl.view.panX}
+      data-pan-y={ctl.view.panY}
       style={{ cursor: ctl.cursor() }}
       onPointerDown={(e) => {
         e.preventDefault();
