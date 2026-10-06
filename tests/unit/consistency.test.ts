@@ -86,6 +86,27 @@ describe('conform pipeline', () => {
     expect(res.warnings.join(' ')).toMatch(/clipped/);
   });
 
+  it('drops the colour cast image models leave along the canvas edge', () => {
+    const render = fakeAiRender();
+    // A 4px pinkish strip on the left and top border, too strong for background removal.
+    for (let y = 0; y < render.height; y++)
+      for (let x = 0; x < 4; x++) render.data.set([200, 120, 120, 255], (y * render.width + x) * 4);
+    for (let x = 0; x < render.width; x++)
+      for (let y = 0; y < 4; y++) render.data.set([200, 120, 120, 255], (y * render.width + x) * 4);
+    const plain = conformToCharacter(render, ctx());
+    const trimmed = conformToCharacter(render, ctx({ trimBorder: 0.015 }));
+    const opaque = (img: { data: Uint8ClampedArray }) => {
+      let n = 0;
+      for (let i = 3; i < img.data.length; i += 4) if (img.data[i] > 0) n++;
+      return n;
+    };
+    // Untrimmed, the strip counts as content: the whole canvas is scaled to the reference height and
+    // the character shrinks to a fraction of its size.
+    expect(opaque(trimmed.image)).toBeGreaterThan(opaque(plain.image) * 2);
+    expect(Math.abs(trimmed.metrics.contentHeight - sprite.height)).toBeLessThanOrEqual(1);
+    expect(findFeet(trimmed.image)!.groundY).toBe(cell.anchorY);
+  });
+
   it('rejects empty results', () => {
     expect(() => conformToCharacter(createRaster(64, 64, C.white), ctx())).toThrow(/empty/);
   });

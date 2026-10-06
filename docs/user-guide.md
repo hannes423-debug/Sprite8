@@ -55,7 +55,7 @@ pixels are protected: you choose whether to skip or overwrite them. The whole ru
 - **Style locks**: palette, outline, shading, resolution, proportions, character scale, visual
   style. Palette lock snaps generated colours to the source palette (default for pixel art);
   outline lock re-applies the source outline colour; scale lock matches the reference height.
-- **Advanced**: base seed, generation size (512/768/1024), prompt style (*tags* for Stable
+- **Advanced**: base seed, generation size (512 for Stable Diffusion 1.5 — the default —, 1024 for SDXL-class models), prompt style (*tags* for Stable
   Diffusion, *instruction* for image-editing models), scale normalisation, variation strength,
   references, extra (negative) prompt and a live preview of the prompt for the selected direction.
 

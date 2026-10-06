@@ -28,6 +28,21 @@ const VIEW_TAGS: Record<Direction, string> = {
   NW: 'three-quarter back view, character facing away and turned to the left (north-west)',
 };
 
+/**
+ * What a view must NOT look like. Image models drift back to the (usually front-facing) reference,
+ * so each view names the confusions it is most prone to.
+ */
+const VIEW_NEGATIVE: Record<Direction, string> = {
+  N: 'face, eyes, nose, mouth, facing the viewer, front view, looking at the viewer',
+  NE: 'face, eyes, nose, mouth, facing the viewer, front view, looking at the viewer',
+  E: 'front view, back view, facing the viewer, facing away',
+  SE: 'back view, facing away, seen from behind, back of the head',
+  S: 'back view, facing away, seen from behind, back of the head, profile view',
+  SW: 'back view, facing away, seen from behind, back of the head',
+  W: 'front view, back view, facing the viewer, facing away',
+  NW: 'face, eyes, nose, mouth, facing the viewer, front view, looking at the viewer',
+};
+
 const CAMERA_TAGS: Record<CameraAngle, string> = {
   side: 'eye-level camera',
   elevated: 'slightly elevated camera, 3/4 top-down game perspective',
@@ -95,9 +110,14 @@ export function buildDirectionPrompt(
       : 'clean dark outlines'
     : null;
   const positive = join([
+    // The view comes first: text encoders weight the beginning of a prompt most, and the view is
+    // the one thing that must differ from the reference image.
+    VIEW_TAGS[direction],
+    // Small models happily paint a scene around the character (an ice rink around a hockey
+    // player); asking for it early works better than at the end of a long prompt.
+    `simple background, plain ${bgName} background`,
     STYLE_TAGS[ref.style.art],
     ref.description,
-    VIEW_TAGS[direction],
     CAMERA_TAGS[ref.camera],
     'full body, standing, feet visible',
     'same character as the reference image, identical outfit, identical proportions',
@@ -112,9 +132,10 @@ export function buildDirectionPrompt(
   const otherHand =
     ref.handedness === 'right' ? 'left-handed' : ref.handedness === 'left' ? 'right-handed' : null;
   const negative = join([
+    VIEW_NEGATIVE[direction],
     'multiple characters, duplicate, cropped, cut off feet, extra limbs, extra fingers',
     'different outfit, different colors, different proportions',
-    'text, watermark, signature, background scenery, floor shadow, blurry',
+    'text, watermark, signature, background scenery, landscape, room, floor, horizon, gradient background, patterned background, border, frame, floor shadow, blurry',
     ref.style.pixelArt && 'anti-aliasing, smooth gradients, jpeg artifacts',
     asymmetric && 'mirrored, flipped, horizontally flipped',
     asymmetric && otherHand,

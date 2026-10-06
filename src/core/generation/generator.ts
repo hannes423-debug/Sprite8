@@ -1,6 +1,6 @@
 import type { Animation, Frame, FrameOrigin, FrameStatus } from '../animation';
 import { characterReference } from '../character/createModel';
-import { conformToCharacter } from '../consistency/conform';
+import { conformToCharacter, type ConformResult } from '../consistency/conform';
 import { DIRECTIONS, angleBetween, directionsByDistance, type Direction } from '../directions';
 import { activeAnimation, placeOnAnchor, type Project } from '../project/project';
 import type {
@@ -84,6 +84,39 @@ function collectViews(anim: Animation, frame: number): ViewSnapshot[] {
 
 function paletteRgba(hexes: string[]): Rgba[] {
   return hexes.map((h) => hexToRgba(h)).filter((c): c is Rgba => !!c);
+}
+
+/**
+ * Conforms raw model output to the character (background removal, scale, palette and outline
+ * locks, ground line). `generationScale` is the provider-pixels-per-working-pixel factor of the
+ * input the model was given.
+ */
+export function conformAiImage(
+  project: Project,
+  raw: RasterImage,
+  generationScale: number,
+  background: Rgba | null,
+): ConformResult {
+  const character = project.character!;
+  const outlineColor = character.style.outline.color
+    ? hexToRgba(character.style.outline.color)
+    : null;
+  return conformToCharacter(raw, {
+    cell: project.cell,
+    pixelArt: character.style.pixelArt,
+    locks: character.locks,
+    palette: paletteRgba(character.colors.palette),
+    outline:
+      character.style.outline.enabled && outlineColor
+        ? { color: outlineColor, thickness: character.style.outline.thickness }
+        : null,
+    referenceHeight: project.source!.sprite.height,
+    scaleMode: project.generation.scaleMode,
+    generationScale,
+    backgroundHint: background,
+    // Image models often leave a colour cast along the canvas edge.
+    trimBorder: 0.015,
+  });
 }
 
 export async function generateView(args: GenerateViewArgs): Promise<GeneratedView> {
@@ -187,23 +220,7 @@ export async function generateView(args: GenerateViewArgs): Promise<GeneratedVie
     return { direction, frame, image: result.image, status: result.kind, origin, warnings: [] };
   }
   if (!result.image) throw new GenerationError('The provider returned no image.');
-  const outlineColor = character.style.outline.color
-    ? hexToRgba(character.style.outline.color)
-    : null;
-  const conformed = conformToCharacter(result.image, {
-    cell: project.cell,
-    pixelArt,
-    locks: character.locks,
-    palette: paletteRgba(character.colors.palette),
-    outline:
-      character.style.outline.enabled && outlineColor
-        ? { color: outlineColor, thickness: character.style.outline.thickness }
-        : null,
-    referenceHeight: source.sprite.height,
-    scaleMode: project.generation.scaleMode,
-    generationScale,
-    backgroundHint: background.color,
-  });
+  const conformed = conformAiImage(project, result.image, generationScale, background.color);
   return {
     direction,
     frame,

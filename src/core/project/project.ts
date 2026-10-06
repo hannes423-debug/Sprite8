@@ -131,7 +131,7 @@ export function defaultGenerationSettings(): GenerationSettings {
     promptStyle: 'tags',
     extraPrompt: '',
     extraNegative: '',
-    generationSize: 768,
+    generationSize: 512,
     variationStrength: 0.45,
     scaleMode: 'height',
   };

@@ -45,6 +45,7 @@ programs with their own licences; Sprite8 does not include, download or redistri
 | Tool | Licence (check the project for the current terms) |
 | --- | --- |
 | ComfyUI | GPL-3.0 |
+| ComfyUI_IPAdapter_plus (custom nodes for the IP-Adapter workflow) | GPL-3.0 |
 | AUTOMATIC1111 Stable Diffusion WebUI | AGPL-3.0 |
 | Hugging Face diffusers (used by the optional Python example) | Apache-2.0 |
 

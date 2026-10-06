@@ -34,6 +34,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:live": "vitest run --config vitest.live.config.ts",
     "check": "npm run typecheck && npm run lint && npm run test",
     "assets": "node scripts/build-example-assets.mjs",
     "reference-server": "node models/reference-server/server.mjs"

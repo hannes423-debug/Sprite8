@@ -45,6 +45,12 @@ export interface ConformContext {
   tolerance?: number;
   /** Detect integer-upscaled pixel art (for user imports). */
   detectUpscale?: boolean;
+  /**
+   * Fraction of the image to cut off on every side before anything else. Image models often leave
+   * a colour cast along the canvas edge that background removal would keep as a thin line; a
+   * generated character never needs the outermost pixels.
+   */
+  trimBorder?: number;
 }
 
 export interface ConformResult {
@@ -64,6 +70,11 @@ export class ConformError extends Error {}
 export function conformToCharacter(raw: RasterImage, ctx: ConformContext): ConformResult {
   const warnings: string[] = [];
   let img = raw;
+  if (ctx.trimBorder && ctx.trimBorder > 0) {
+    const b = Math.ceil(ctx.trimBorder * Math.min(img.width, img.height));
+    if (img.width > 4 * b && img.height > 4 * b)
+      img = crop(img, { x: b, y: b, width: img.width - 2 * b, height: img.height - 2 * b });
+  }
   if (ctx.detectUpscale && ctx.pixelArt) {
     const ps = detectPixelScale(img);
     if (ps.scale > 1) img = downsamplePixelArt(img, ps.scale, ps.offsetX, ps.offsetY);
@@ -76,7 +87,9 @@ export function conformToCharacter(raw: RasterImage, ctx: ConformContext): Confo
   });
   img = bg.image;
   if (bg.info.kind === 'none') {
-    warnings.push('Could not find a uniform background to remove; check the edges of this view.');
+    warnings.push(
+      'Could not find a uniform background to remove — an image model may have painted a scene around the character. Regenerate it (or try another seed), or erase the background in the editor.',
+    );
   }
   const bounds = contentBounds(img, 16);
   if (!bounds) throw new ConformError('The image is empty after background removal.');

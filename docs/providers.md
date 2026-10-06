@@ -45,11 +45,18 @@ It does not invent unseen sides. Draw them in the editor, import images, or use 
 
 ### Workflows
 
-The default workflow (`models/comfyui/sprite8-img2img-basic.json`) is a plain image-to-image graph
-built from stock nodes. It is a good connectivity test, but img2img tends to keep the source pose;
-convincing new directions need a workflow designed for it — a multi-view model, pose guidance
-(ControlNet), identity guidance (IP-Adapter) or an instruction-based image-editing model. Paste
-any workflow under **Advanced → Workflow**:
+Choose a bundled workflow under **Workflow** in the provider settings:
+
+| Preset | |
+| --- | --- |
+| *Basic image-to-image* (default) | `sprite8-img2img-basic.json` — stock nodes only; a connectivity test (img2img tends to keep the source pose) |
+| *SD 1.5 + pose ControlNet* | `sprite8-sd15-pose.json` — Sprite8 draws a pose skeleton per direction |
+| *… + IP-Adapter identity* | `sprite8-sd15-pose-ipadapter.json` — adds identity from the source view (custom nodes) |
+| *… + style LoRA* | `sprite8-sd15-pose-lora.json` — adds a LoRA, e.g. for pixel art |
+
+The pose presets are described in [local-ai.md](local-ai.md) (setup for a 6 GB GPU). Anything else —
+a multi-view model, an instruction-based image-editing model — you build yourself and paste under
+**Advanced → Workflow** (a pasted workflow overrides the preset):
 
 1. Build and test it in ComfyUI, using a **Load Image** node for the source view and a
    **Save Image** node for the result.
@@ -67,6 +74,11 @@ any workflow under **Advanced → Workflow**:
 | `{{SEED}}` `{{STEPS}}` `{{CFG}}` `{{DENOISE}}` | sampler settings (denoise = variation strength for variations) |
 | `{{WIDTH}}` `{{HEIGHT}}` | size of the uploaded canvas |
 | `{{CHECKPOINT}}` | checkpoint from the provider settings |
+| `{{POSE_IMAGE}}` | OpenPose-style skeleton of the character turned to the requested direction, aligned to the character on the canvas (uploaded only when the workflow uses it) |
+| `{{MASK_IMAGE}}` | repaint mask for *Set Latent Noise Mask*: white where the character may appear (hull of the pose skeleton) |
+| `{{INIT_IMAGE}}` | starting image: a blank background for new views, the current view for variations |
+| `{{CONTROLNET}}` `{{CONTROL_STRENGTH}}` | pose ControlNet file name and strength from the provider settings |
+| `{{LORA}}` `{{LORA_STRENGTH}}` `{{IPADAPTER_WEIGHT}}` | style LoRA and IP-Adapter settings |
 | `{{DIRECTION}}` `{{SOURCE_DIRECTION}}` | e.g. `NE`, `S` |
 
 Sprite8 uploads images to ComfyUI's `input` folder (`POST /upload/image`), queues the filled
@@ -124,6 +136,7 @@ Request (`Content-Type: application/json`; `Authorization: Bearer …` if an API
   "height": 768,
   "background": "#ffffff",
   "sourceImage": "<base64 PNG>",
+  "poseImage": "<base64 PNG>",
   "references": [{ "direction": "E", "image": "<base64 PNG>" }],
   "character": {
     "name": "hockey_player",
@@ -145,7 +158,10 @@ For variations: `"mode": "variation"`, plus `"baseImage"` (the current view of t
 `"strength"` (0–1).
 
 `sourceImage` is a square canvas with the character centred on a plain background (`background`);
-pixel art is upscaled by an integer factor. The response may have any size and any background —
+pixel art is upscaled by an integer factor. `poseImage` is an OpenPose-style skeleton of the
+character turned to `direction` (black background, coloured limbs; the colours tell which side is
+the character's right), drawn on the same canvas and aligned to the character — feed it to a pose
+ControlNet or ignore it. The response may have any size and any background —
 Sprite8 conforms it.
 
 Response:

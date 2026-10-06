@@ -1,4 +1,7 @@
 import defaultWorkflow from '../../../../models/comfyui/sprite8-img2img-basic.json';
+import poseWorkflow from '../../../../models/comfyui/sprite8-sd15-pose.json';
+import poseLoraWorkflow from '../../../../models/comfyui/sprite8-sd15-pose-lora.json';
+import poseIpAdapterWorkflow from '../../../../models/comfyui/sprite8-sd15-pose-ipadapter.json';
 
 /**
  * ComfyUI workflow templates.
@@ -11,11 +14,42 @@ import defaultWorkflow from '../../../../models/comfyui/sprite8-img2img-basic.js
  *   {{PROMPT}} {{NEGATIVE_PROMPT}} {{INSTRUCTION}}
  *   {{SEED}} {{STEPS}} {{CFG}} {{DENOISE}} {{WIDTH}} {{HEIGHT}}
  *   {{CHECKPOINT}} {{DIRECTION}} {{SOURCE_DIRECTION}}
+ *   {{POSE_IMAGE}}          OpenPose-style guide for the requested direction (see core/pose)
+ *   {{INIT_IMAGE}}          starting image: blank background (the current view when varying)
+ *   {{MASK_IMAGE}}          repaint mask: white where the character may appear (see core/pose/mask)
+ *   {{CONTROLNET}} {{CONTROL_STRENGTH}}   pose ControlNet file name / strength
+ *   {{LORA}} {{LORA_STRENGTH}}            optional style LoRA (the "-lora" preset)
+ *   {{IPADAPTER_WEIGHT}} {{IPADAPTER_MODE}}   identity strength / weight type of the IP-Adapter preset
  *
  * A string that is exactly "{{SEED}}" (etc.) becomes a JSON number when the
  * value is numeric, so templates stay valid JSON.
  */
 export const DEFAULT_COMFY_WORKFLOW = JSON.stringify(defaultWorkflow, null, 2);
+
+/** Workflows shipped with Sprite8 (models/comfyui/). */
+export const COMFY_PRESETS = {
+  basic: {
+    label: 'Basic image-to-image (any checkpoint)',
+    workflow: DEFAULT_COMFY_WORKFLOW,
+  },
+  'sd15-pose': {
+    label: 'SD 1.5 + pose ControlNet (6 GB GPUs)',
+    workflow: JSON.stringify(poseWorkflow, null, 2),
+  },
+  'sd15-pose-ipadapter': {
+    label: 'SD 1.5 + pose ControlNet + IP-Adapter identity (custom nodes)',
+    workflow: JSON.stringify(poseIpAdapterWorkflow, null, 2),
+  },
+  'sd15-pose-lora': {
+    label: 'SD 1.5 + pose ControlNet + style LoRA',
+    workflow: JSON.stringify(poseLoraWorkflow, null, 2),
+  },
+} as const;
+export type ComfyPresetId = keyof typeof COMFY_PRESETS;
+
+export function isComfyPreset(id: string): id is ComfyPresetId {
+  return Object.prototype.hasOwnProperty.call(COMFY_PRESETS, id);
+}
 
 export const KNOWN_PLACEHOLDERS = [
   'SOURCE_IMAGE',
@@ -35,6 +69,15 @@ export const KNOWN_PLACEHOLDERS = [
   'CHECKPOINT',
   'DIRECTION',
   'SOURCE_DIRECTION',
+  'POSE_IMAGE',
+  'INIT_IMAGE',
+  'MASK_IMAGE',
+  'CONTROLNET',
+  'CONTROL_STRENGTH',
+  'LORA',
+  'LORA_STRENGTH',
+  'IPADAPTER_WEIGHT',
+  'IPADAPTER_MODE',
 ] as const;
 
 export type PlaceholderValues = Partial<

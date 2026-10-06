@@ -1,3 +1,4 @@
+import { poseGuideForInput } from '../pose';
 import { rgbaToHex } from '../sprite';
 import {
   base64ToRaster,
@@ -47,6 +48,8 @@ export interface Sprite8GenerateRequestBody {
   height: number;
   background: string;
   sourceImage: string;
+  /** OpenPose-style skeleton for `direction`, aligned to the character on `sourceImage`. */
+  poseImage: string;
   references: Array<{ direction: string; image: string }>;
   baseImage?: string;
   strength?: number;
@@ -102,6 +105,10 @@ async function buildBody(
     height: req.input.image.height,
     background: rgbaToHex(req.input.background),
     sourceImage: await rasterToBase64Png(req.input.image, ctx.codec),
+    poseImage: await rasterToBase64Png(
+      poseGuideForInput(req.direction, req.character, req.input),
+      ctx.codec,
+    ),
     references: refs,
     ...(variation
       ? {

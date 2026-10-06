@@ -27,6 +27,7 @@ into two clearly separated parts:
 | Construction guides: proportion lines, R/L side markers, the exact mirrored outline of the opposite view | |
 | Mirroring partner views (E↔W, NE↔NW, SE↔SW) — *only* for symmetric characters and *only* if you enable it | |
 | Consistency system: scale-to-reference, foot alignment, palette/outline locks, per-direction checks (height, ground line, palette, main colours, **mirrored-hand detection**) | |
+| **Pose guides**: an OpenPose-style skeleton per direction, built from the character's proportions, plus a repaint mask that keeps the background plain — for pose ControlNets | |
 | Pixel editor with onion skin, compare view, copy/paste between directions, undo/redo | |
 | Sprite sheet, individual PNGs, JSON metadata, ZIP export | |
 
@@ -58,6 +59,10 @@ These rules drive the R/L markers in every cell and in the editor, the per-featu
 stick (right hand): on the RIGHT side of the image, in front"), the prompts sent to image models,
 and a check that flags generated views whose one-sided equipment reaches the wrong way ("this view
 may be mirrored"). Details: [docs/directions.md](docs/directions.md).
+
+**Have a modest GPU (e.g. a GTX 1060 6 GB)?** [docs/local-ai.md](docs/local-ai.md) walks through a
+ComfyUI setup — Stable Diffusion 1.5 + pose ControlNet + IP-Adapter — for which Sprite8 draws the
+pose guide of every direction itself.
 
 ## Quick start
 
@@ -177,6 +182,7 @@ Architecture overview: [docs/architecture.md](docs/architecture.md).
 | `npm run preview` | Serve the production build |
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:e2e` | End-to-end tests (Playwright; run `npx playwright install chromium` once) |
+| `npm run test:live` | Optional: runs the real ComfyUI workflow against *your* running ComfyUI (see [tests/live](tests/live/README.md)) |
 | `npm run typecheck` · `npm run lint` · `npm run format` | TypeScript · oxlint · Prettier |
 | `npm run assets` | Regenerate the example sprites and icons |
 | `npm run reference-server -- --backend mock` | Sprite8 HTTP protocol test server |

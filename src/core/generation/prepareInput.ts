@@ -17,6 +17,8 @@ export interface PreparedInput {
   scale: number;
   background: Rgba;
   backgroundName: string;
+  /** Where the character stands on `image` (pixels). Used to align pose guides. */
+  body?: { centerX: number; top: number; bottom: number };
 }
 
 const BACKGROUNDS: Array<{ color: Rgba; name: string }> = [
@@ -73,7 +75,14 @@ export function prepareProviderInput(
   }
   const out = createRaster(size, size, opts.background.color);
   const feet = findFeet(scaled);
-  const dx = Math.round(size / 2 - (feet?.feetX ?? scaled.width / 2));
+  // Centre the feet — but never push part of a wide or lopsided character out of the canvas
+  // (a crouching player with a long stick has its feet far from the middle of its silhouette).
+  const margin = Math.round(size * 0.02);
+  const wanted = Math.round(size / 2 - (feet?.feetX ?? scaled.width / 2));
+  const dx =
+    scaled.width > size - 2 * margin
+      ? Math.round((size - scaled.width) / 2)
+      : Math.min(Math.max(wanted, margin), size - margin - scaled.width);
   const bottom = Math.round(size * (1 - (1 - fill) / 2));
   const dy = bottom - scaled.height;
   blitInPlace(out, scaled, dx, dy, 'over');
@@ -82,5 +91,6 @@ export function prepareProviderInput(
     scale,
     background: opts.background.color,
     backgroundName: opts.background.name,
+    body: { centerX: dx + (feet?.feetX ?? scaled.width / 2), top: dy, bottom: dy + scaled.height },
   };
 }

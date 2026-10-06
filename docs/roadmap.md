@@ -32,7 +32,9 @@ Next:
   (3, 4, 6, 8) and playback preview.
 - Pose control and a simple skeleton/reference system (key landmarks per frame) to keep limbs
   consistent across directions.
-- Generating frames with providers (pose-conditioned workflows).
+- Generating frames with providers (pose-conditioned workflows). *Started:* per-direction pose
+  guides and SD 1.5 + ControlNet workflows exist for the standing pose
+  ([local-ai.md](local-ai.md)); animated poses are next.
 - Importing frame sequences and sheets ("slice a turnaround sheet into directions").
 
 ## Phase 4 — Local models and advanced controls

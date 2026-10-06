@@ -1,6 +1,7 @@
 import { delay, fetchChecked, joinUrl, readJson, withTimeout } from '../http';
 import {
   ProviderError,
+  settingBool,
   settingNumber,
   settingString,
   type DirectionRequest,
@@ -10,11 +11,17 @@ import {
   type ProviderSettings,
   type VariationRequest,
 } from '../types';
+import { createRaster } from '../../sprite';
+import { poseGuideForInput, repaintMaskForInput } from '../../pose';
 import {
+  COMFY_PRESETS,
   DEFAULT_COMFY_WORKFLOW,
   fillWorkflow,
+  findPlaceholders,
   imageOutputNodes,
+  isComfyPreset,
   parseWorkflow,
+  type ComfyPresetId,
   type PlaceholderValues,
 } from './workflow';
 
@@ -62,6 +69,44 @@ async function uploadImage(
   return json.subfolder ? `${json.subfolder}/${json.name}` : json.name;
 }
 
+/** The workflow to run: a pasted custom one wins, otherwise the selected preset. */
+function chooseWorkflow(settings: ProviderSettings): string {
+  const custom = settingString(settings, 'workflow').trim();
+  // Older versions stored the basic template as the field's default value.
+  if (custom && custom !== DEFAULT_COMFY_WORKFLOW) return custom;
+  const preset = settingString(settings, 'preset', 'basic');
+  return COMFY_PRESETS[isComfyPreset(preset) ? preset : 'basic'].workflow;
+}
+
+/** What to tell the user when a placeholder has no value. */
+const MISSING_HINTS: Record<string, string> = {
+  CHECKPOINT:
+    'Set a checkpoint in the ComfyUI provider settings ("Test connection" lists the installed ones).',
+  LORA: 'Set a LoRA file in the ComfyUI provider settings, or choose a preset without a LoRA.',
+  CONTROLNET:
+    'Set the pose ControlNet file in the ComfyUI provider settings ("Test connection" lists the installed ones).',
+};
+
+/** Values a loader node accepts, from ComfyUI's /object_info. */
+async function listChoices(
+  base: string,
+  nodeClass: string,
+  input: string,
+  ctx: ProviderContext,
+): Promise<string[]> {
+  const res = await fetchChecked(
+    ctx.fetch,
+    joinUrl(base, `object_info/${nodeClass}`),
+    { signal: withTimeout(ctx.signal, 8000) },
+    `Listing ${nodeClass} options`,
+  );
+  const json = await readJson<
+    Record<string, { input?: { required?: Record<string, [string[]?]> } }>
+  >(res, 'ComfyUI');
+  const list = json[nodeClass]?.input?.required?.[input]?.[0];
+  return Array.isArray(list) ? list : [];
+}
+
 function describeComfyError(json: unknown): string {
   const j = json as {
     error?: { message?: string; details?: string };
@@ -87,8 +132,7 @@ async function run(
 ): Promise<DirectionResult> {
   const base = baseUrl(req.settings);
   const timeoutMs = settingNumber(req.settings, 'timeoutSec', 600) * 1000;
-  const workflowText = settingString(req.settings, 'workflow').trim() || DEFAULT_COMFY_WORKFLOW;
-  const template = parseWorkflow(workflowText);
+  const template = parseWorkflow(chooseWorkflow(req.settings));
   const tag = `${req.direction}_${req.seed}_${randomId().slice(0, 6)}`;
 
   ctx.onProgress?.(0.02, 'Uploading images…');
@@ -99,6 +143,46 @@ async function run(
     `sprite8_src_${tag}.png`,
     ctx,
   );
+  // Pose guide and repaint mask: only rendered and uploaded when the workflow uses them.
+  const used = findPlaceholders(template);
+  let poseName: string | undefined;
+  let maskName: string | undefined;
+  let initName: string | undefined;
+  if (used.has('INIT_IMAGE')) {
+    // New views start from a blank background so nothing of the source pose survives; a variation
+    // starts from the current view.
+    initName = variation
+      ? sourceName
+      : await uploadImage(
+          base,
+          await ctx.codec.encodePng(
+            createRaster(mainInput.image.width, mainInput.image.height, mainInput.background),
+          ),
+          `sprite8_init_${tag}.png`,
+          ctx,
+        );
+  }
+  if (used.has('MASK_IMAGE')) {
+    const mask = repaintMaskForInput(req.direction, req.character, mainInput, {
+      wholeImage: !settingBool(req.settings, 'protectBackground', true),
+      includeSilhouette: !!variation,
+    });
+    maskName = await uploadImage(
+      base,
+      await ctx.codec.encodePng(mask),
+      `sprite8_mask_${tag}.png`,
+      ctx,
+    );
+  }
+  if (used.has('POSE_IMAGE')) {
+    const pose = poseGuideForInput(req.direction, req.character, mainInput);
+    poseName = await uploadImage(
+      base,
+      await ctx.codec.encodePng(pose),
+      `sprite8_pose_${tag}.png`,
+      ctx,
+    );
+  }
   const refNames: string[] = [];
   for (const [i, ref] of req.references.slice(0, 4).entries()) {
     refNames.push(
@@ -110,7 +194,17 @@ async function run(
       ),
     );
   }
+  // Workflows that draw from a pose guide must repaint everything (denoise 1) or the source's own
+  // pose wins; plain image-to-image keeps more of the source.
+  const configuredDenoise = settingNumber(req.settings, 'denoise', 0);
+  const denoise =
+    configuredDenoise > 0
+      ? configuredDenoise
+      : findPlaceholders(template).has('POSE_IMAGE')
+        ? 1
+        : 0.8;
   const checkpoint = settingString(req.settings, 'checkpoint').trim();
+  const lora = settingString(req.settings, 'lora').trim();
   const values: PlaceholderValues = {
     SOURCE_IMAGE: sourceName,
     REFERENCE_IMAGE_1: refNames[0] ?? sourceName,
@@ -123,24 +217,31 @@ async function run(
     SEED: req.seed,
     STEPS: settingNumber(req.settings, 'steps', 24),
     CFG: settingNumber(req.settings, 'cfg', 6.5),
-    DENOISE: variation ? variation.strength : settingNumber(req.settings, 'denoise', 0.8),
+    DENOISE: variation ? variation.strength : denoise,
     WIDTH: mainInput.image.width,
     HEIGHT: mainInput.image.height,
     DIRECTION: req.direction,
     SOURCE_DIRECTION: req.character.sourceDirection,
+    CONTROLNET:
+      settingString(req.settings, 'controlnet').trim() ||
+      'control_v11p_sd15_openpose_fp16.safetensors',
+    CONTROL_STRENGTH: settingNumber(req.settings, 'controlStrength', 1),
+    LORA_STRENGTH: settingNumber(req.settings, 'loraStrength', 0.8),
+    IPADAPTER_WEIGHT: settingNumber(req.settings, 'ipAdapterWeight', 0.5),
+    IPADAPTER_MODE: settingString(req.settings, 'ipAdapterMode', 'standard'),
+    ...(poseName ? { POSE_IMAGE: poseName } : {}),
+    ...(maskName ? { MASK_IMAGE: maskName } : {}),
+    ...(initName ? { INIT_IMAGE: initName } : {}),
     ...(checkpoint ? { CHECKPOINT: checkpoint } : {}),
+    ...(lora ? { LORA: lora } : {}),
   };
   let workflow;
   try {
     workflow = fillWorkflow(template, values);
   } catch (err) {
     const msg = (err as Error).message;
-    throw new ProviderError(
-      msg,
-      msg.includes('CHECKPOINT')
-        ? 'Set a checkpoint in the ComfyUI provider settings ("Test connection" lists the installed ones).'
-        : undefined,
-    );
+    const key = Object.keys(MISSING_HINTS).find((k) => msg.includes(`{{${k}}}`));
+    throw new ProviderError(msg, key ? MISSING_HINTS[key] : undefined);
   }
 
   ctx.onProgress?.(0.08, 'Queueing in ComfyUI…');
@@ -164,7 +265,13 @@ async function run(
     'ComfyUI',
   );
   if (!queued.ok || !queuedJson.prompt_id) {
-    throw new ProviderError(`ComfyUI rejected the workflow: ${describeComfyError(queuedJson)}`);
+    const reason = describeComfyError(queuedJson);
+    throw new ProviderError(
+      `ComfyUI rejected the workflow: ${reason}`,
+      /does not exist|missing_node_type|not found/i.test(reason)
+        ? 'A node of this workflow is not installed in ComfyUI. The IP-Adapter workflow needs the ComfyUI_IPAdapter_plus custom nodes (see models/comfyui/README.md).'
+        : undefined,
+    );
   }
   const promptId = queuedJson.prompt_id;
 
@@ -247,22 +354,105 @@ export const comfyUIProvider: ImageGenerationProvider = {
       help: 'Start ComfyUI with --enable-cors-header so the browser may call it, or use "/proxy/comfyui" with `npm run dev`.',
     },
     {
+      key: 'preset',
+      label: 'Workflow',
+      type: 'select',
+      default: 'basic',
+      options: (Object.keys(COMFY_PRESETS) as ComfyPresetId[]).map((id) => ({
+        value: id,
+        label: COMFY_PRESETS[id].label,
+      })),
+      help: 'The pose presets turn the character with an OpenPose ControlNet guide that Sprite8 draws for every direction (needs an SD 1.5 checkpoint and a pose ControlNet; see models/comfyui/README.md). A workflow pasted under Advanced overrides this choice.',
+    },
+    {
       key: 'checkpoint',
       label: 'Checkpoint',
       type: 'text',
       default: '',
-      placeholder: 'e.g. sd_xl_base_1.0.safetensors',
-      help: 'Fills {{CHECKPOINT}} in the workflow. "Test connection" lists installed checkpoints.',
+      placeholder: 'e.g. v1-5-pruned-emaonly.safetensors',
+      help: 'Fills {{CHECKPOINT}} in the workflow. "Test connection" lists installed checkpoints. The pose presets need an SD 1.5 model.',
+    },
+    {
+      key: 'lora',
+      label: 'Style LoRA',
+      type: 'text',
+      default: '',
+      placeholder: 'e.g. pixel-art-xl.safetensors',
+      help: 'Only used by the "+ style LoRA" workflow (for example a pixel-art LoRA for SD 1.5).',
     },
     {
       key: 'denoise',
-      label: 'Denoise',
+      label: 'Denoise (0 = auto)',
       type: 'number',
-      default: 0.8,
+      default: 0,
       min: 0,
       max: 1,
       step: 0.05,
-      help: 'How far a view may move away from the source. Higher = more rotation, less identity.',
+      help: 'How far a view may move away from the source. 0 = automatic (1.0 for the pose workflows, 0.8 for plain image-to-image). Lower keeps more of the source; higher allows more rotation.',
+    },
+    {
+      key: 'protectBackground',
+      label: 'Keep the background plain',
+      type: 'checkbox',
+      default: true,
+      help: 'Pose workflows only repaint the area around the character; the rest keeps the source background. Small models otherwise like to paint scenery that cannot be removed again.',
+      advanced: true,
+    },
+    {
+      key: 'controlnet',
+      label: 'Pose ControlNet',
+      type: 'text',
+      default: 'control_v11p_sd15_openpose_fp16.safetensors',
+      help: 'File name of an OpenPose ControlNet in ComfyUI/models/controlnet (pose workflows only).',
+      advanced: true,
+    },
+    {
+      key: 'controlStrength',
+      label: 'Pose strength',
+      type: 'number',
+      default: 1,
+      min: 0,
+      max: 2,
+      step: 0.05,
+      help: 'How strictly the generated view follows the pose guide.',
+      advanced: true,
+    },
+    {
+      key: 'ipAdapterWeight',
+      label: 'IP-Adapter weight',
+      type: 'number',
+      default: 0.5,
+      min: 0,
+      max: 2,
+      step: 0.05,
+      help: "How strongly the IP-Adapter workflow copies the look of the source view (colours, outfit, hair). Higher values copy more of the source's front-facing composition too, which makes back and side views come out facing the camera; 0.5 is a good start.",
+      advanced: true,
+    },
+    {
+      key: 'ipAdapterMode',
+      label: 'IP-Adapter mode',
+      type: 'select',
+      default: 'standard',
+      options: [
+        { value: 'standard', label: 'Standard — copy look and composition' },
+        {
+          value: 'style transfer',
+          label: 'Style transfer — copy look, leave the pose to the guide',
+        },
+        { value: 'prompt is more important', label: 'Prompt is more important' },
+      ],
+      help: 'How the IP-Adapter workflow uses the source view. "Style transfer" keeps colours and outfit but not the front-facing composition, which helps back and side views.',
+      advanced: true,
+    },
+    {
+      key: 'loraStrength',
+      label: 'LoRA strength',
+      type: 'number',
+      default: 0.8,
+      min: 0,
+      max: 2,
+      step: 0.05,
+      advanced: true,
     },
     { key: 'steps', label: 'Steps', type: 'number', default: 24, min: 1, max: 150 },
     { key: 'cfg', label: 'CFG', type: 'number', default: 6.5, min: 0, max: 30, step: 0.5 },
@@ -270,9 +460,9 @@ export const comfyUIProvider: ImageGenerationProvider = {
       key: 'workflow',
       label: 'Workflow (API format JSON)',
       type: 'textarea',
-      default: DEFAULT_COMFY_WORKFLOW,
+      default: '',
       advanced: true,
-      help: 'Paste a workflow saved with "Save (API Format)". Placeholders: {{SOURCE_IMAGE}}, {{REFERENCE_IMAGE_1}}…{{REFERENCE_IMAGE_4}}, {{PROMPT}}, {{NEGATIVE_PROMPT}}, {{INSTRUCTION}}, {{SEED}}, {{STEPS}}, {{CFG}}, {{DENOISE}}, {{WIDTH}}, {{HEIGHT}}, {{CHECKPOINT}}, {{DIRECTION}}.',
+      help: 'Leave empty to use the workflow chosen above. Or paste one saved with "Save (API Format)". Placeholders: {{SOURCE_IMAGE}}, {{POSE_IMAGE}}, {{REFERENCE_IMAGE_1}}…{{REFERENCE_IMAGE_4}}, {{PROMPT}}, {{NEGATIVE_PROMPT}}, {{INSTRUCTION}}, {{SEED}}, {{STEPS}}, {{CFG}}, {{DENOISE}}, {{WIDTH}}, {{HEIGHT}}, {{CHECKPOINT}}, {{CONTROLNET}}, {{CONTROL_STRENGTH}}, {{LORA}}, {{LORA_STRENGTH}}, {{DIRECTION}}.',
     },
     {
       key: 'outputNode',
@@ -309,24 +499,75 @@ export const comfyUIProvider: ImageGenerationProvider = {
       const details: string[] = [];
       if (stats.devices?.length)
         details.push(`Device: ${stats.devices.map((d) => d.name).join(', ')}`);
-      try {
-        const info = await fetchChecked(
-          ctx.fetch,
-          joinUrl(base, 'object_info/CheckpointLoaderSimple'),
-          { signal: withTimeout(ctx.signal, 8000) },
-          'Listing checkpoints',
-        );
-        const json = await readJson<{
-          CheckpointLoaderSimple?: { input?: { required?: { ckpt_name?: [string[]] } } };
-        }>(info, 'ComfyUI');
-        const names = json.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0] ?? [];
-        details.push(
-          names.length
-            ? `Checkpoints: ${names.join(', ')}`
-            : 'No checkpoints found in models/checkpoints.',
-        );
-      } catch {
-        details.push('Could not list checkpoints.');
+      const preset = settingString(settings, 'preset', 'basic');
+      const wants = {
+        controlnet: preset.startsWith('sd15-pose'),
+        lora: preset === 'sd15-pose-lora',
+      };
+      const checks: Array<{
+        label: string;
+        node: string;
+        input: string;
+        setting: string;
+        wanted: boolean;
+        none: string;
+      }> = [
+        {
+          label: 'Checkpoints',
+          node: 'CheckpointLoaderSimple',
+          input: 'ckpt_name',
+          setting: 'checkpoint',
+          wanted: true,
+          none: 'No checkpoints found in models/checkpoints.',
+        },
+        {
+          label: 'ControlNet models',
+          node: 'ControlNetLoader',
+          input: 'control_net_name',
+          setting: 'controlnet',
+          wanted: wants.controlnet,
+          none: 'No ControlNet models found in models/controlnet (the pose workflows need an OpenPose one).',
+        },
+        {
+          label: 'LoRAs',
+          node: 'LoraLoader',
+          input: 'lora_name',
+          setting: 'lora',
+          wanted: wants.lora,
+          none: 'No LoRAs found in models/loras.',
+        },
+      ];
+      if (preset === 'sd15-pose-ipadapter') {
+        try {
+          const probe = await fetchChecked(
+            ctx.fetch,
+            joinUrl(base, 'object_info/IPAdapterUnifiedLoader'),
+            { signal: withTimeout(ctx.signal, 8000) },
+            'Checking for the IP-Adapter nodes',
+          );
+          const json = await readJson<Record<string, unknown>>(probe, 'ComfyUI');
+          details.push(
+            json.IPAdapterUnifiedLoader
+              ? 'IP-Adapter nodes: installed'
+              : 'Warning: the IP-Adapter nodes are missing — install ComfyUI_IPAdapter_plus.',
+          );
+        } catch {
+          details.push('Could not check for the IP-Adapter nodes.');
+        }
+      }
+      for (const c of checks) {
+        if (!c.wanted) continue;
+        try {
+          const names = await listChoices(base, c.node, c.input, ctx);
+          details.push(names.length ? `${c.label}: ${names.join(', ')}` : c.none);
+          const chosen = settingString(settings, c.setting).trim();
+          if (chosen && names.length && !names.includes(chosen))
+            details.push(
+              `Warning: "${chosen}" is not among the installed ${c.label.toLowerCase()}.`,
+            );
+        } catch {
+          details.push(`Could not list ${c.label.toLowerCase()}.`);
+        }
       }
       return {
         ok: true,

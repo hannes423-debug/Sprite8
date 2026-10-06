@@ -10,8 +10,10 @@ import {
 } from '../../src/core/project';
 import {
   a1111Provider,
+  COMFY_PRESETS,
   comfyUIProvider,
   DEFAULT_COMFY_WORKFLOW,
+  KNOWN_PLACEHOLDERS,
   fillWorkflow,
   findPlaceholders,
   getProvider,
@@ -30,6 +32,8 @@ import {
   shouldApplyView,
 } from '../../src/core/generation';
 import { characterReference } from '../../src/core/character';
+import { foregroundMask } from '../../src/core/pose';
+import { prepareProviderInput } from '../../src/core/generation';
 import {
   findFeet,
   flipHorizontal,
@@ -164,6 +168,26 @@ describe('generation orchestrator', () => {
     const sym = buildDirectionPrompt({ ...ref, symmetry: 'symmetric' }, 'E', { style: 'tags' });
     expect(sym.sideRules).toEqual([]);
     expect(sym.negative).not.toContain('mirrored');
+  });
+
+  it('leads with the view, asks for a plain background early and names view-specific mistakes', () => {
+    const p = readyProject();
+    const ref = characterReference(p.character!, p.setup);
+    const tokens = (text: string) => text.split(', ');
+    for (const d of ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const) {
+      const prompt = buildDirectionPrompt(ref, d, { style: 'tags', backgroundName: 'gray' });
+      // Text encoders weight the start of a prompt most: the view must come first.
+      expect(prompt.positive.startsWith(prompt.viewPhrase), d).toBe(true);
+      expect(tokens(prompt.positive).slice(0, 12)).toContain('plain gray background');
+      expect(prompt.negative).toContain('gradient background');
+    }
+    const neg = (d: 'N' | 'NE' | 'NW' | 'S' | 'E') =>
+      buildDirectionPrompt(ref, d, { style: 'tags' }).negative;
+    // Back views must not show a face; front and side views must not turn their back.
+    for (const d of ['N', 'NE', 'NW'] as const) expect(neg(d), d).toContain('eyes');
+    expect(neg('S')).toContain('seen from behind');
+    expect(neg('S')).not.toContain('eyes, nose');
+    expect(neg('E')).toContain('front view');
   });
 
   it('returns the source unchanged for the source direction', async () => {
@@ -434,5 +458,421 @@ describe('friendly network errors', () => {
         ctx: { codec: nodeCodec, fetch },
       }),
     ).rejects.toThrow(/Could not reach/);
+  });
+});
+
+/** A tiny ComfyUI stand-in that records what was queued. */
+function fakeComfy(onQueue?: (wf: Record<string, { inputs: Record<string, unknown> }>) => void) {
+  const uploads: string[] = [];
+  const files = new Map<string, File>();
+  const handler: Handler = async (url, init) => {
+    if (url.pathname === '/upload/image') {
+      const file = (init!.body as FormData).get('image') as File;
+      uploads.push(file.name);
+      files.set(file.name, file);
+      return json({ name: file.name, subfolder: '', type: 'input' });
+    }
+    if (url.pathname === '/prompt') {
+      onQueue?.(JSON.parse(String(init?.body)).prompt);
+      return json({ prompt_id: 'p1', number: 1, node_errors: {} });
+    }
+    if (url.pathname === '/history/p1')
+      return json({
+        p1: {
+          status: { completed: true, status_str: 'success' },
+          outputs: Object.fromEntries(
+            ['8', '11'].map((id) => [
+              id,
+              { images: [{ filename: 'out.png', subfolder: '', type: 'output' }] },
+            ]),
+          ),
+        },
+      });
+    if (url.pathname === '/view')
+      return new Response(encodePng(512, 512, backViewRender().data) as Uint8Array<ArrayBuffer>, {
+        headers: { 'Content-Type': 'image/png' },
+      });
+    return new Response('not found', { status: 404 });
+  };
+  return { uploads, files, ...mockFetch(handler) };
+}
+
+describe('ComfyUI presets', () => {
+  const STOCK = new Set([
+    'CheckpointLoaderSimple',
+    'LoadImage',
+    'VAEEncode',
+    'VAEDecode',
+    'CLIPTextEncode',
+    'KSampler',
+    'SaveImage',
+    'ControlNetLoader',
+    'ControlNetApplyAdvanced',
+    'LoraLoader',
+    'LoadImageMask',
+    'SetLatentNoiseMask',
+  ]);
+  const CUSTOM = new Set(['IPAdapterUnifiedLoader', 'IPAdapter']);
+
+  for (const [id, preset] of Object.entries(COMFY_PRESETS)) {
+    it(`"${id}" is a consistent API-format workflow`, () => {
+      const wf = parseWorkflow(preset.workflow);
+      const ids = new Set(Object.keys(wf));
+      for (const [nodeId, node] of Object.entries(wf)) {
+        expect(STOCK.has(node.class_type) || CUSTOM.has(node.class_type), node.class_type).toBe(
+          true,
+        );
+        for (const [input, value] of Object.entries(node.inputs)) {
+          // Links are [nodeId, outputIndex] and must point at an existing node.
+          if (Array.isArray(value))
+            expect(ids.has(String(value[0])), `${nodeId}.${input}`).toBe(true);
+        }
+      }
+      expect(Object.values(wf).some((n) => n.class_type === 'SaveImage')).toBe(true);
+      for (const name of findPlaceholders(wf)) expect(KNOWN_PLACEHOLDERS).toContain(name);
+    });
+  }
+
+  it('only the IP-Adapter preset needs custom nodes', () => {
+    for (const [id, preset] of Object.entries(COMFY_PRESETS)) {
+      const classes = Object.values(parseWorkflow(preset.workflow)).map((n) => n.class_type);
+      expect(
+        classes.some((c) => CUSTOM.has(c)),
+        id,
+      ).toBe(id === 'sd15-pose-ipadapter');
+    }
+  });
+
+  it('draws and uploads the pose guide only for workflows that use it', async () => {
+    const p = readyProject();
+    const base = { baseUrl: 'http://comfy.local', checkpoint: 'sd15.safetensors' };
+    let basicQueued: Record<string, { inputs: Record<string, unknown> }> = {};
+    const basic = fakeComfy((wf) => (basicQueued = wf));
+    await generateView({
+      project: p,
+      provider: comfyUIProvider,
+      providerSettings: resolveProviderSettings(comfyUIProvider, base),
+      direction: 'E',
+      seed: 1,
+      mode: 'generate',
+      ctx: { codec: nodeCodec, fetch: basic.fetch },
+    });
+    expect(basic.uploads.some((n) => n.startsWith('sprite8_pose_'))).toBe(false);
+    expect(basicQueued['6'].inputs.denoise).toBe(0.8); // automatic: plain image-to-image
+
+    let queued: Record<string, { inputs: Record<string, unknown> }> = {};
+    const pose = fakeComfy((wf) => (queued = wf));
+    await generateView({
+      project: p,
+      provider: comfyUIProvider,
+      providerSettings: resolveProviderSettings(comfyUIProvider, {
+        ...base,
+        preset: 'sd15-pose',
+        controlStrength: 0.65,
+        controlnet: 'openpose.safetensors',
+      }),
+      direction: 'E',
+      seed: 1,
+      mode: 'generate',
+      ctx: { codec: nodeCodec, fetch: pose.fetch },
+    });
+    const poseUpload = pose.uploads.find((n) => n.startsWith('sprite8_pose_E_'));
+    expect(poseUpload).toBeTruthy();
+    expect(queued['3'].inputs.image).toBe(poseUpload);
+    expect(queued['4'].inputs.control_net_name).toBe('openpose.safetensors');
+    expect(queued['7'].inputs.strength).toBe(0.65);
+    expect(queued['9'].inputs.denoise).toBe(1); // automatic: pose workflows repaint everything
+    const maskUpload = pose.uploads.find((n) => n.startsWith('sprite8_mask_E_'));
+    expect(maskUpload).toBeTruthy();
+    expect(queued['14'].inputs.image).toBe(maskUpload);
+    expect(queued['15'].inputs.samples).toEqual(['8', 0]);
+    expect(queued['9'].inputs.latent_image).toEqual(['15', 0]);
+    // New views start from a blank background, not from the source image.
+    const initUpload = pose.uploads.find((n) => n.startsWith('sprite8_init_E_'));
+    expect(initUpload).toBeTruthy();
+    expect(queued['16'].inputs.image).toBe(initUpload);
+    const init = await nodeCodec.decode(pose.files.get(initUpload!)!);
+    const first = init.data.slice(0, 4);
+    for (let i = 0; i < init.data.length; i += 4)
+      expect([...init.data.slice(i, i + 4)]).toEqual([...first]);
+  });
+
+  it('starts a variation from the current view', async () => {
+    let queued: Record<string, { inputs: Record<string, unknown> }> = {};
+    const fake = fakeComfy((wf) => (queued = wf));
+    const p = readyProject();
+    const withE = {
+      ...p,
+      animations: p.animations.map((a) => ({
+        ...a,
+        tracks: {
+          ...a.tracks,
+          E: {
+            ...a.tracks.E,
+            frames: [{ ...a.tracks.S.frames[0], id: 'e0', status: 'edited' as const }],
+          },
+        },
+      })),
+    };
+    await generateView({
+      project: withE,
+      provider: comfyUIProvider,
+      providerSettings: resolveProviderSettings(comfyUIProvider, {
+        baseUrl: 'http://comfy.local',
+        checkpoint: 'x.safetensors',
+        preset: 'sd15-pose',
+      }),
+      direction: 'E',
+      seed: 1,
+      mode: 'variation',
+      ctx: { codec: nodeCodec, fetch: fake.fetch },
+    });
+    expect(String(queued['16'].inputs.image)).toMatch(/^sprite8_src_E_/);
+    expect(fake.uploads.some((n) => n.startsWith('sprite8_init_'))).toBe(false);
+  });
+
+  it('can repaint the whole image when the background protection is off', async () => {
+    const brightness = async (settings: Record<string, string | number | boolean>) => {
+      const fake = fakeComfy();
+      await generateView({
+        project: readyProject(),
+        provider: comfyUIProvider,
+        providerSettings: resolveProviderSettings(comfyUIProvider, {
+          baseUrl: 'http://comfy.local',
+          checkpoint: 'x.safetensors',
+          preset: 'sd15-pose',
+          ...settings,
+        }),
+        direction: 'E',
+        seed: 1,
+        mode: 'generate',
+        ctx: { codec: nodeCodec, fetch: fake.fetch },
+      });
+      const name = fake.uploads.find((n) => n.startsWith('sprite8_mask_'))!;
+      const img = await nodeCodec.decode(fake.files.get(name)!);
+      let white = 0;
+      for (let i = 0; i < img.data.length; i += 4) if (img.data[i] === 255) white++;
+      return white / (img.width * img.height);
+    };
+    expect(await brightness({})).toBeLessThan(0.5);
+    expect(await brightness({ protectBackground: false })).toBe(1);
+  });
+
+  it('honours an explicit denoise and uses the variation strength for variations', async () => {
+    const p = readyProject();
+    const run = async (
+      settings: Record<string, string | number>,
+      mode: 'generate' | 'variation',
+    ) => {
+      let queued: Record<string, { inputs: Record<string, unknown> }> = {};
+      const fake = fakeComfy((wf) => (queued = wf));
+      const project =
+        mode === 'variation'
+          ? {
+              ...p,
+              animations: p.animations.map((a) => ({
+                ...a,
+                tracks: {
+                  ...a.tracks,
+                  E: {
+                    ...a.tracks.E,
+                    frames: [
+                      {
+                        ...a.tracks.S.frames[0],
+                        id: 'e0',
+                        status: 'edited' as const,
+                        image: a.tracks.S.frames[0].image,
+                      },
+                    ],
+                  },
+                },
+              })),
+            }
+          : p;
+      await generateView({
+        project,
+        provider: comfyUIProvider,
+        providerSettings: resolveProviderSettings(comfyUIProvider, {
+          baseUrl: 'http://comfy.local',
+          checkpoint: 'x.safetensors',
+          preset: 'sd15-pose',
+          ...settings,
+        }),
+        direction: 'E',
+        seed: 1,
+        mode,
+        ctx: { codec: nodeCodec, fetch: fake.fetch },
+      });
+      return queued['9'].inputs.denoise;
+    };
+    expect(await run({ denoise: 0.55 }, 'generate')).toBe(0.55);
+    expect(await run({ denoise: 0.55 }, 'variation')).toBe(p.generation.variationStrength);
+  });
+
+  it('lets a pasted workflow override the preset, but ignores the old default text', async () => {
+    const p = readyProject();
+    const base = { baseUrl: 'http://comfy.local', checkpoint: 'x.safetensors' };
+    const run = async (settings: Record<string, string | number>) => {
+      let queued: Record<string, unknown> = {};
+      const fake = fakeComfy((wf) => (queued = wf));
+      await generateView({
+        project: p,
+        provider: comfyUIProvider,
+        providerSettings: resolveProviderSettings(comfyUIProvider, { ...base, ...settings }),
+        direction: 'E',
+        seed: 1,
+        mode: 'generate',
+        ctx: { codec: nodeCodec, fetch: fake.fetch },
+      });
+      return Object.keys(queued);
+    };
+    // Older versions stored the basic template as the field default — it must not beat the preset.
+    expect(await run({ preset: 'sd15-pose', workflow: DEFAULT_COMFY_WORKFLOW })).toContain('7');
+    const custom = JSON.stringify({
+      '1': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: '{{CHECKPOINT}}' } },
+      '2': { class_type: 'SaveImage', inputs: { images: ['1', 0], filename_prefix: 'x' } },
+    });
+    expect(await run({ preset: 'sd15-pose', workflow: custom })).toEqual(['1', '2']);
+  });
+
+  it('asks for a LoRA when the LoRA preset has none', async () => {
+    const fake = fakeComfy();
+    await expect(
+      generateView({
+        project: readyProject(),
+        provider: comfyUIProvider,
+        providerSettings: resolveProviderSettings(comfyUIProvider, {
+          baseUrl: 'http://comfy.local',
+          checkpoint: 'x.safetensors',
+          preset: 'sd15-pose-lora',
+        }),
+        direction: 'E',
+        seed: 1,
+        mode: 'generate',
+        ctx: { codec: nodeCodec, fetch: fake.fetch },
+      }),
+    ).rejects.toMatchObject({ message: expect.stringContaining('{{LORA}}') });
+  });
+
+  it('warns when the configured models are not installed', async () => {
+    const { fetch } = mockFetch(async (url) => {
+      if (url.pathname === '/system_stats') return json({ devices: [{ name: 'cuda:0' }] });
+      const node = url.pathname.split('/').pop()!;
+      const choices: Record<string, [string, string[]]> = {
+        CheckpointLoaderSimple: ['ckpt_name', ['sd15.safetensors']],
+        ControlNetLoader: ['control_net_name', ['canny.safetensors']],
+      };
+      const c = choices[node];
+      return json(c ? { [node]: { input: { required: { [c[0]]: [c[1]] } } } } : {});
+    });
+    const status = await comfyUIProvider.checkStatus(
+      {
+        baseUrl: 'http://comfy.local',
+        preset: 'sd15-pose',
+        checkpoint: 'sd15.safetensors',
+        controlnet: 'openpose.safetensors',
+      },
+      { codec: nodeCodec, fetch },
+    );
+    const text = status.details?.join('\n') ?? '';
+    expect(text).toContain('ControlNet models: canny.safetensors');
+    expect(text).toMatch(/Warning: "openpose.safetensors" is not among the installed controlnet/);
+    expect(text).not.toMatch(/Warning: "sd15/);
+  });
+
+  it('detects missing IP-Adapter nodes', async () => {
+    const { fetch } = mockFetch(async (url) =>
+      url.pathname === '/system_stats' ? json({}) : json({}),
+    );
+    const status = await comfyUIProvider.checkStatus(
+      { baseUrl: 'http://comfy.local', preset: 'sd15-pose-ipadapter' },
+      { codec: nodeCodec, fetch },
+    );
+    expect(status.details?.join(' ')).toMatch(/IP-Adapter nodes are missing/);
+  });
+
+  it('adds an install hint when ComfyUI does not know a node', async () => {
+    const { fetch } = mockFetch(async (url) =>
+      url.pathname === '/upload/image'
+        ? json({ name: 'a.png' })
+        : json(
+            { error: { message: 'Cannot execute because node IPAdapter does not exist.' } },
+            400,
+          ),
+    );
+    await expect(
+      generateView({
+        project: readyProject(),
+        provider: comfyUIProvider,
+        providerSettings: resolveProviderSettings(comfyUIProvider, {
+          baseUrl: 'http://comfy.local',
+          checkpoint: 'x.safetensors',
+          preset: 'sd15-pose-ipadapter',
+        }),
+        direction: 'E',
+        seed: 1,
+        mode: 'generate',
+        ctx: { codec: nodeCodec, fetch },
+      }),
+    ).rejects.toMatchObject({ hint: expect.stringContaining('ComfyUI_IPAdapter_plus') });
+  });
+});
+
+describe('Sprite8 HTTP provider pose guide', () => {
+  it('sends an aligned pose image with every request', async () => {
+    let body: Sprite8GenerateRequestBody | null = null;
+    const { fetch } = mockFetch(async (_url, init) => {
+      body = JSON.parse(String(init?.body));
+      return json({ image: pngBase64(backViewRender()) });
+    });
+    await generateView({
+      project: readyProject(),
+      provider: sprite8HttpProvider,
+      providerSettings: { endpoint: 'http://srv.local' },
+      direction: 'E',
+      seed: 1,
+      mode: 'generate',
+      ctx: { codec: nodeCodec, fetch },
+    });
+    const sent = body as Sprite8GenerateRequestBody | null;
+    expect(sent?.poseImage.length).toBeGreaterThan(100);
+    const pose = await nodeCodec.decode(
+      new Blob([Buffer.from(sent!.poseImage, 'base64')], { type: 'image/png' }),
+    );
+    expect(pose.width).toBe(sent!.width);
+  });
+});
+
+describe('prepareProviderInput framing', () => {
+  it('keeps a wide, lopsided character fully inside the canvas', () => {
+    // Legs far to the right, a long stick reaching far to the left (a crouching player).
+    const sprite = createRaster(80, 60);
+    const ink = { r: 20, g: 20, b: 20, a: 255 };
+    for (let y = 10; y < 58; y++)
+      for (let x = 60; x < 70; x++) blit(sprite, createRaster(1, 1, ink), x, y);
+    for (let y = 20; y < 24; y++)
+      for (let x = 0; x < 70; x++) blit(sprite, createRaster(1, 1, ink), x, y);
+    const size = 256;
+    const white = { color: { r: 255, g: 255, b: 255, a: 255 }, name: 'white' };
+    const input = prepareProviderInput(sprite, size, { pixelArt: true, background: white });
+    const { mask } = foregroundMask(input.image, white.color);
+    let minX = size;
+    let maxX = -1;
+    for (let i = 0; i < mask.length; i++)
+      if (mask[i]) {
+        minX = Math.min(minX, i % size);
+        maxX = Math.max(maxX, i % size);
+      }
+    expect(minX).toBeGreaterThanOrEqual(Math.round(size * 0.02));
+    expect(maxX).toBeLessThan(size - Math.round(size * 0.02));
+    // The reported body centre is where the feet really are.
+    const feet = findFeet(input.image)!;
+    expect(Math.abs(input.body!.centerX - feet.feetX)).toBeLessThanOrEqual(2);
+    // A normal character is still centred on its feet.
+    const normal = prepareProviderInput(outlined(humanoid({ stick: 'screen-left' })), size, {
+      pixelArt: true,
+      background: white,
+    });
+    expect(Math.abs(normal.body!.centerX - size / 2)).toBeLessThanOrEqual(1);
   });
 });

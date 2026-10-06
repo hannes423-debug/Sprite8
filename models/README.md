@@ -20,6 +20,8 @@ What matters for 8-direction sprites:
 - **Handedness.** Most models confuse left and right. Sprite8's prompts state where every one-sided
   item must appear and include "mirrored, flipped, left-handed" in the negative prompt; its
   handedness check flags views that still came out mirrored.
+- **Starting point for a 6 GB GPU.** SD 1.5 + OpenPose ControlNet (+ IP-Adapter): Sprite8 draws the
+  pose skeleton for every direction itself — see [docs/local-ai.md](../docs/local-ai.md).
 - **Pixel art.** Generate at a high resolution; Sprite8 reduces the result to the sprite's native
   resolution with a majority-vote downscale and snaps it to the source palette (palette lock).
 
@@ -34,6 +36,9 @@ Model licences change and differ between versions — **always read the model ca
 | FLUX.1 [schnell] | Apache-2.0 | Allowed |
 | FLUX.1 [dev], FLUX.1 Kontext [dev] | FLUX.1 [dev] Non-Commercial License | Not without a separate licence |
 | Qwen-Image / Qwen-Image-Edit | Apache-2.0 | Allowed |
+| ControlNet 1.1 (OpenPose etc., lllyasviel) | CreativeML OpenRAIL-M | Allowed with use-based restrictions |
+| IP-Adapter (h94) | Apache-2.0 | Allowed |
+| CLIP ViT-H/14 image encoder (LAION) | MIT | Allowed |
 
 Community fine-tunes, LoRAs and ControlNet/IP-Adapter weights each have their own licence, which
 may be stricter than the base model's.

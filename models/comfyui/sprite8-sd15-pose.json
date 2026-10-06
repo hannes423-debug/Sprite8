@@ -1,0 +1,196 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "{{CHECKPOINT}}"
+    },
+    "_meta": {
+      "title": "Load checkpoint (SD 1.5)"
+    }
+  },
+  "3": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "{{POSE_IMAGE}}"
+    },
+    "_meta": {
+      "title": "Sprite8 pose guide"
+    }
+  },
+  "4": {
+    "class_type": "ControlNetLoader",
+    "inputs": {
+      "control_net_name": "{{CONTROLNET}}"
+    },
+    "_meta": {
+      "title": "Load OpenPose ControlNet"
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{{PROMPT}}",
+      "clip": [
+        "1",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Direction prompt"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{{NEGATIVE_PROMPT}}",
+      "clip": [
+        "1",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Negative prompt"
+    }
+  },
+  "7": {
+    "class_type": "ControlNetApplyAdvanced",
+    "inputs": {
+      "positive": [
+        "5",
+        0
+      ],
+      "negative": [
+        "6",
+        0
+      ],
+      "control_net": [
+        "4",
+        0
+      ],
+      "image": [
+        "3",
+        0
+      ],
+      "strength": "{{CONTROL_STRENGTH}}",
+      "start_percent": 0.0,
+      "end_percent": 1.0,
+      "vae": [
+        "1",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "Apply pose"
+    }
+  },
+  "8": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "16",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "Encode source"
+    }
+  },
+  "9": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "7",
+        0
+      ],
+      "negative": [
+        "7",
+        1
+      ],
+      "latent_image": [
+        "15",
+        0
+      ],
+      "seed": "{{SEED}}",
+      "steps": "{{STEPS}}",
+      "cfg": "{{CFG}}",
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": "{{DENOISE}}"
+    },
+    "_meta": {
+      "title": "Sampler"
+    }
+  },
+  "10": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "9",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "Decode"
+    }
+  },
+  "11": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "10",
+        0
+      ],
+      "filename_prefix": "sprite8_{{DIRECTION}}"
+    },
+    "_meta": {
+      "title": "Sprite8 output"
+    }
+  },
+  "14": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "{{MASK_IMAGE}}",
+      "channel": "red"
+    },
+    "_meta": {
+      "title": "Sprite8 repaint mask (where the character may appear)"
+    }
+  },
+  "15": {
+    "class_type": "SetLatentNoiseMask",
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "mask": [
+        "14",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Keep the background untouched"
+    }
+  },
+  "16": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "{{INIT_IMAGE}}"
+    },
+    "_meta": {
+      "title": "Starting image (blank background; the current view when varying)"
+    }
+  }
+}

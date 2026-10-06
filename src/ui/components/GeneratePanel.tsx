@@ -192,7 +192,10 @@ export function GeneratePanel() {
               />
             )}
           </Field>
-          <Field label="Generation size">
+          <Field
+            label="Generation size"
+            help="The square canvas sent to the model. Stable Diffusion 1.5 is trained at 512 px; SDXL-class models want 1024 px. Larger than a model's native size often produces duplicated figures."
+          >
             {(id) => (
               <Select
                 id={id}
