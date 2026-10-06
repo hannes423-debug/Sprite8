@@ -100,6 +100,28 @@ allow it. Browsers refuse a page on `https://` calling a ComfyUI on another comp
 (`http://192.168…`); in that case run Sprite8 itself on the machine that has the GPU, or use
 `npm run dev` and the `/proxy/comfyui` URL (see [providers.md](providers.md#browsers-cors-and-local-servers)).
 
+## What testing showed
+
+The pose-guided workflow was run end to end against a real SD 1.5 + OpenPose ControlNet +
+IP-Adapter install (on a CPU — about 3.5 minutes per view; a GPU is much faster) with two very
+different characters: the pixel-art example hockey player and a painted, anime-style one that is
+crouching with a stick. Honest summary:
+
+- **It works for the hard part:** from a front-facing source the model produced back, side and
+  three-quarter views that still look like the same character — helmet, jersey colours and stripes,
+  gloves, skates — in the right direction, standing on the shared ground line at the reference
+  height, on a removable plain background.
+- **It is a neutral standing pose.** The crouch, the stick and other held items of the source are
+  not carried over (the pose guide has no equipment), so Sprite8's handedness check warns on views
+  where one-sided equipment is expected but missing. Add held items in the editor (copy/paste from
+  the source direction, then mirror/transform the selection if needed).
+- **Hallucinations happen:** invented jersey numbers and text, a stray belt, oversized sleeves,
+  now and then a scene behind the character (the repaint mask removes most of those). One view in
+  three may need a different seed. The consistency checks measure position, colour and
+  handedness — not anatomy — so look at every view.
+- **Tuning matters:** an IP-Adapter weight of 0.8 made back views show the face; 0.5 fixed that
+  (it is the default). "Style transfer" mode kept less of the character's shape.
+
 ## The workflows
 
 | Preset | Needs | Use it when |
