@@ -28,7 +28,7 @@ export function defaultAppSettings(): AppSettings {
     providerId: DEFAULT_PROVIDER_ID,
     providers: {},
     ui: { gridMode: 'compass', showGuides: true, showSideMarkers: true },
-    editor: { showGrid: true, onion: true, onionOpacity: 0.3, brushSize: 1, mirrorPaint: false },
+    editor: { showGrid: true, onion: false, onionOpacity: 0.35, brushSize: 1, mirrorPaint: false },
   };
 }
 

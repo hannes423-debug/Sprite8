@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeSprite, estimateProportions, symmetryScore } from '../../src/core/analysis';
 import { createCharacterModel } from '../../src/core/character';
-import { createRaster } from '../../src/core/sprite';
+import { readFileSync } from 'node:fs';
+import { decodePng } from '../../models/reference-server/png.mjs';
+import { createRaster, findFeet } from '../../src/core/sprite';
 import { C, humanoid, outlined } from './helpers';
 
 describe('character analysis', () => {
@@ -69,5 +71,32 @@ describe('character analysis', () => {
     const blob = estimateProportions(createRaster(6, 20, C.red));
     expect(blob.measured).toBe(false);
     expect(blob.neckY).toBe(0.25);
+  });
+});
+
+describe('bundled examples', () => {
+  const load = (name: string) => {
+    const { width, height, data } = decodePng(new Uint8Array(readFileSync(new URL(`../../assets/examples/${name}`, import.meta.url))));
+    return { width, height, data };
+  };
+
+  it('reads the hockey player as an asymmetric, right-handed front view', () => {
+    const sprite = load('hockey-player.png');
+    const feet = findFeet(sprite)!;
+    // The stick blade rests on the ice on the left; the feet are the skates.
+    expect(feet.feetX).toBeGreaterThan(18);
+    expect(feet.feetX).toBeLessThan(24);
+    const a = analyzeSprite(sprite, { sourceDirection: 'S', pixelArt: true });
+    expect(a.symmetry.verdict).toBe('asymmetric');
+    expect(a.handedness.handedness).toBe('right');
+    expect(a.outline.detected).toBe(true);
+    expect(a.characterType.value).toBe('humanoid');
+  });
+
+  it('reads the robot as symmetric', () => {
+    const a = analyzeSprite(load('robot.png'), { sourceDirection: 'S', pixelArt: true });
+    expect(a.symmetry.verdict).toBe('symmetric');
+    expect(a.handedness.handedness).toBeNull();
+    expect(a.sourceDirectionHint.candidates).toEqual(['S', 'N']);
   });
 });

@@ -49,22 +49,57 @@ export interface FootInfo {
  * the lowest `bandFraction` of the silhouette. Aligning on the feet (not the
  * bounding box) keeps a character with a long weapon or hockey stick standing
  * in the same place in every direction.
+ *
+ * Equipment that touches the ground (a hockey blade, a staff, a tail) is
+ * ignored: only ground pixels inside the body's core column — the middle half
+ * of all opaque pixels, widened a little — count as feet.
  */
 export function findFeet(img: RasterImage, bandFraction = 0.12, alphaThreshold = 127): FootInfo | null {
   const b = contentBounds(img, alphaThreshold);
   if (!b) return null;
-  const band = Math.max(1, Math.round(b.height * bandFraction));
-  let sum = 0;
-  let n = 0;
-  for (let y = b.y + b.height - band; y < b.y + b.height; y++) {
+  // Column histogram of the whole silhouette → interquartile "body core".
+  const cols = new Float64Array(b.width);
+  let total = 0;
+  for (let y = b.y; y < b.y + b.height; y++) {
     for (let x = b.x; x < b.x + b.width; x++) {
       if (img.data[(y * img.width + x) * 4 + 3] > alphaThreshold) {
-        sum += x + 0.5;
-        n++;
+        cols[x - b.x]++;
+        total++;
       }
     }
   }
-  const feetX = n > 0 ? sum / n : b.x + b.width / 2;
+  const quantile = (q: number) => {
+    let acc = 0;
+    for (let i = 0; i < cols.length; i++) {
+      acc += cols[i];
+      if (acc >= total * q) return b.x + i;
+    }
+    return b.x + b.width - 1;
+  };
+  const q1 = quantile(0.25);
+  const q3 = quantile(0.75);
+  const margin = Math.max(1, (q3 - q1) * 0.25);
+  const coreMin = q1 - margin;
+  const coreMax = q3 + 1 + margin;
+
+  const band = Math.max(1, Math.round(b.height * bandFraction));
+  let sum = 0;
+  let n = 0;
+  let sumAll = 0;
+  let nAll = 0;
+  for (let y = b.y + b.height - band; y < b.y + b.height; y++) {
+    for (let x = b.x; x < b.x + b.width; x++) {
+      if (img.data[(y * img.width + x) * 4 + 3] > alphaThreshold) {
+        sumAll += x + 0.5;
+        nAll++;
+        if (x + 0.5 >= coreMin && x + 0.5 <= coreMax) {
+          sum += x + 0.5;
+          n++;
+        }
+      }
+    }
+  }
+  const feetX = n > 0 ? sum / n : nAll > 0 ? sumAll / nAll : b.x + b.width / 2;
   return { feetX, groundY: b.y + b.height, bounds: b };
 }
 

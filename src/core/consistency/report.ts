@@ -150,6 +150,7 @@ export function consistencyReport(input: ReportInput): ConsistencyCheck[] {
 /** Worst status of a report, for compact badges. */
 export function reportStatus(checks: ConsistencyCheck[]): CheckStatus {
   if (checks.some((c) => c.status === 'warn')) return 'warn';
-  if (checks.every((c) => c.status === 'ok')) return 'ok';
+  // Informational checks (e.g. "not measurable in a profile view") do not downgrade.
+  if (checks.some((c) => c.status === 'ok')) return 'ok';
   return 'info';
 }

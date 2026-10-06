@@ -1,6 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc", "import"],
+  "plugins": [
+    "react",
+    "typescript",
+    "oxc",
+    "import"
+  ],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -8,9 +13,48 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "warn",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
     "typescript/no-explicit-any": "error",
-    "no-console": ["warn", { "allow": ["warn", "error"] }]
+    "no-console": [
+      "warn",
+      {
+        "allow": [
+          "warn",
+          "error"
+        ]
+      }
+    ],
+    "react/react-in-jsx-scope": "off",
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": [
+          "**/*.css"
+        ]
+      }
+    ]
   },
-  "ignorePatterns": ["dist", "node_modules", "test-results", "playwright-report"]
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "test-results",
+    "playwright-report"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "scripts/**",
+        "models/**",
+        "tests/**"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
 }
